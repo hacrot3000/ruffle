@@ -7,9 +7,19 @@
 02B0-02FF, # Spacing Modifier Letters
 0370-03FF, # Greek and Coptic
 0400-04FF, # Cyrillic
+1E00-1EFF, # Latin Extended Additional (Vietnamese characters)
 2000-206F, # General Punctuation
 2070-209F, # Superscripts and Subscripts
 20A0-20CF, # Currency Symbols
 2100-214F, # Letterlike Symbols
 2150-218F, # Number Forms
 2200-22FF, # Mathematical Operators
+
+#Chinese
+4E00-9FFF   # CJK Unified Ideographs (basic)
+3400-4DBF   # CJK Unified Ideographs Extension A
+20000-2A6DF # CJK Unified Ideographs Extension B
+2A700-2B73F # CJK Unified Ideographs Extension C
+2B740-2B81F # CJK Unified Ideographs Extension D
+2B820-2CEAF # CJK Unified Ideographs Extension E
+2CEB0-2EBEF # CJK Unified Ideographs Extension F
