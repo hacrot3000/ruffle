@@ -1,0 +1,10 @@
+#!/bin/bash
+
+set -e
+
+CJK_FONT_WEIGHT=400 CJK_SIZE_SCALE=1.05 ./update-font.sh #NotoSansSC
+# CJK_FONT_WEIGHT=600 CJK_SIZE_SCALE=4.0 ./update-font.sh #SimSun
+cd ..
+./script/build_web.sh debug
+./script/upload_ruffle.sh
+cd assets

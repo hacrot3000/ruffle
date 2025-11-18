@@ -32,8 +32,12 @@ cp fonts/tahoma.ttf ./Tahoma.ttf
 cp fonts/TimesNewRoman.ttf ./TimesNewRoman.ttf
 # cp fonts/NotoSansCJKtc-VF.ttf ./NotoSansCJKtc-VF.ttf
 # cp fonts/NotoSansCJKsc-VF.ttf ./NotoSansCJKsc-VF.ttf
+
 # cp fonts/NotoSansSC-VariableFont_wght.ttf ./NotoSansCJKtc-VF.ttf	# Scale 1.05-1.1 is enough
-cp fonts/SimSun.ttf ./NotoSansCJKtc-VF.ttf	# Scale 4.0 is enough
+# cp fonts/NotoSansSC-SemiBold.ttf ./NotoSansCJKtc-VF.ttf	# Scale 1.05-1.1 is enough
+cp fonts/NotoSansSC-Bold.ttf ./NotoSansCJKtc-VF.ttf	# Scale 1.05-1.1 is enough
+
+# cp fonts/SimSun.ttf ./NotoSansCJKtc-VF.ttf	# Scale 4.0 is enough
 
 echo "1.1. Instantiating CJK variable font to weight $CJK_FONT_WEIGHT"
 # Instantiate variable font to specific weight using fonttools
@@ -92,7 +96,9 @@ pyftsubset --unicodes-file=cjk-unicodes.txt NotoSansCJKtc.ttf --output-file=Noto
 # pyftsubset --unicodes-file=cjk-unicodes.txt NotoSansCJKsc-VF.ttf --output-file=NotoSansCJKsc.subset.ttf --layout-features="*" --no-layout-closure
 
 echo "7. Merging Latin fonts"
-pyftmerge Arial.subset.ttf Tahoma.subset.ttf TimesNewRoman.subset.ttf
+# pyftmerge Arial.subset.ttf Tahoma.subset.ttf TimesNewRoman.subset.ttf
+pyftmerge Arial.subset.ttf Tahoma.subset.ttf
+
 mv merged.ttf merged-latin.ttf
 
 echo "8. Merging CJK fonts"
