@@ -6,15 +6,24 @@ set -e
 # CONFIGURATION
 # ============================================================================
 # CJK_SIZE_SCALE: Scale factor to increase CJK character size
-#   - Default: 1.2 (20% larger than base size)
+#   - Default: 1.05 (5% larger than base size)
 #   - Set to 1.0 for no additional scaling (just match unitsPerEm)
 #   - Increase to make CJK characters larger (e.g., 1.5 = 50% larger, 2.0 = 100% larger)
 #   - Recommended range: 1.0 - 2.0
 #   - Usage: CJK_SIZE_SCALE=1.5 ./update-font.sh
 CJK_SIZE_SCALE=${CJK_SIZE_SCALE:-1.05}
 
+# CJK_FONT_WEIGHT: Font weight for CJK variable fonts
+#   - 400 = Regular (default)
+#   - 500 = Medium
+#   - 600 = SemiBold
+#   - 700 = Bold
+#   - Usage: CJK_FONT_WEIGHT=700 ./update-font.sh
+CJK_FONT_WEIGHT=${CJK_FONT_WEIGHT:-400}
+
 echo "Configuration:"
 echo "  CJK_SIZE_SCALE = $CJK_SIZE_SCALE (CJK characters will be ${CJK_SIZE_SCALE}x larger)"
+echo "  CJK_FONT_WEIGHT = $CJK_FONT_WEIGHT (400=Regular, 500=Medium, 600=SemiBold, 700=Bold)"
 echo ""
 
 echo "1. Copying local fonts"
@@ -23,8 +32,48 @@ cp fonts/tahoma.ttf ./Tahoma.ttf
 cp fonts/TimesNewRoman.ttf ./TimesNewRoman.ttf
 # cp fonts/NotoSansCJKtc-VF.ttf ./NotoSansCJKtc-VF.ttf
 # cp fonts/NotoSansCJKsc-VF.ttf ./NotoSansCJKsc-VF.ttf
-cp fonts/NotoSansSC-VariableFont_wght.ttf ./NotoSansCJKtc.ttf	# Scale 1.5 is enough
-# cp fonts/SimSun.ttf ./NotoSansCJKtc.ttf	# Scale 4.0 is enough
+# cp fonts/NotoSansSC-VariableFont_wght.ttf ./NotoSansCJKtc-VF.ttf	# Scale 1.05-1.1 is enough
+cp fonts/SimSun.ttf ./NotoSansCJKtc-VF.ttf	# Scale 4.0 is enough
+
+echo "1.1. Instantiating CJK variable font to weight $CJK_FONT_WEIGHT"
+# Instantiate variable font to specific weight using fonttools
+# Export variable for Python script
+export CJK_FONT_WEIGHT
+
+python3 << 'PYTHON_INSTANTIATE'
+from fontTools import ttLib
+from fontTools.varLib import instancer
+import os
+
+weight = int(os.environ.get('CJK_FONT_WEIGHT', '400'))
+print(f"Instantiating variable font to weight {weight}...")
+
+# Load variable font
+font = ttLib.TTFont("NotoSansCJKtc-VF.ttf")
+
+# Check if it's a variable font
+if 'fvar' in font:
+    # Instantiate to specific weight
+    instancer.instantiateVariableFont(font, {"wght": weight})
+    print(f"✓ Instantiated to weight {weight}")
+
+    # Remove variable font tables after instantiation
+    # Include gvar which causes issues with pyftsubset
+    var_tables = ['fvar', 'avar', 'cvar', 'gvar', 'HVAR', 'VVAR', 'MVAR', 'STAT']
+    removed = []
+    for table in var_tables:
+        if table in font:
+            del font[table]
+            removed.append(table)
+    if removed:
+        print(f"✓ Removed variable font tables: {', '.join(removed)}")
+else:
+    print("Note: Not a variable font, skipping instantiation")
+
+# Save instantiated font
+font.save("NotoSansCJKtc.ttf")
+print("✓ Saved instantiated font as static font")
+PYTHON_INSTANTIATE
 
 echo "2. Subsetting Arial.ttf"
 pyftsubset --unicodes-file=unicodes-file.txt Arial.ttf --output-file=Arial.subset.ttf
@@ -35,10 +84,9 @@ pyftsubset --unicodes-file=unicodes-file.txt Tahoma.ttf --output-file=Tahoma.sub
 echo "4. Subsetting TimesNewRoman.ttf"
 pyftsubset --unicodes-file=unicodes-file.txt TimesNewRoman.ttf --output-file=TimesNewRoman.subset.ttf
 
-echo "5. Subsetting NotoSansCJKtc-VF.ttf (Traditional Chinese)"
-# Variable fonts need to be instantiated to a specific weight first
-# Use weight=400 (Regular) as default
-pyftsubset --unicodes-file=cjk-unicodes.txt NotoSansCJKtc.ttf --output-file=NotoSansCJKtc.subset.ttf --layout-features="*" --no-layout-closure
+echo "5. Subsetting NotoSansCJKtc.ttf (Instantiated CJK font)"
+# Font already instantiated to specified weight in step 1.1
+pyftsubset --unicodes-file=cjk-unicodes.txt NotoSansCJKtc.ttf --output-file=NotoSansCJKtc.subset.ttf --layout-features="*"
 
 # echo "6. Subsetting NotoSansCJKsc-VF.ttf (Simplified Chinese)"
 # pyftsubset --unicodes-file=cjk-unicodes.txt NotoSansCJKsc-VF.ttf --output-file=NotoSansCJKsc.subset.ttf --layout-features="*" --no-layout-closure
