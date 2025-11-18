@@ -11,7 +11,7 @@ set -e
 #   - Increase to make CJK characters larger (e.g., 1.5 = 50% larger, 2.0 = 100% larger)
 #   - Recommended range: 1.0 - 2.0
 #   - Usage: CJK_SIZE_SCALE=1.5 ./update-font.sh
-CJK_SIZE_SCALE=${CJK_SIZE_SCALE:-1.6}
+CJK_SIZE_SCALE=${CJK_SIZE_SCALE:-1.05}
 
 echo "Configuration:"
 echo "  CJK_SIZE_SCALE = $CJK_SIZE_SCALE (CJK characters will be ${CJK_SIZE_SCALE}x larger)"
@@ -23,8 +23,8 @@ cp fonts/tahoma.ttf ./Tahoma.ttf
 cp fonts/TimesNewRoman.ttf ./TimesNewRoman.ttf
 # cp fonts/NotoSansCJKtc-VF.ttf ./NotoSansCJKtc-VF.ttf
 # cp fonts/NotoSansCJKsc-VF.ttf ./NotoSansCJKsc-VF.ttf
-cp fonts/NotoSansSC-VariableFont_wght.ttf ./NotoSansCJKtc.ttf
-# cp fonts/SimSun.ttf ./NotoSansCJKtc.ttf
+cp fonts/NotoSansSC-VariableFont_wght.ttf ./NotoSansCJKtc.ttf	# Scale 1.5 is enough
+# cp fonts/SimSun.ttf ./NotoSansCJKtc.ttf	# Scale 4.0 is enough
 
 echo "2. Subsetting Arial.ttf"
 pyftsubset --unicodes-file=unicodes-file.txt Arial.ttf --output-file=Arial.subset.ttf
