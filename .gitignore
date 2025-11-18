@@ -16,3 +16,5 @@ RECOVER_*.fla
 
 # Mac junk
 .DS_Store
+
+/core/assets/*.ttf

@@ -2,12 +2,29 @@
 
 set -e
 
+# ============================================================================
+# CONFIGURATION
+# ============================================================================
+# CJK_SIZE_SCALE: Scale factor to increase CJK character size
+#   - Default: 1.2 (20% larger than base size)
+#   - Set to 1.0 for no additional scaling (just match unitsPerEm)
+#   - Increase to make CJK characters larger (e.g., 1.5 = 50% larger, 2.0 = 100% larger)
+#   - Recommended range: 1.0 - 2.0
+#   - Usage: CJK_SIZE_SCALE=1.5 ./update-font.sh
+CJK_SIZE_SCALE=${CJK_SIZE_SCALE:-1.6}
+
+echo "Configuration:"
+echo "  CJK_SIZE_SCALE = $CJK_SIZE_SCALE (CJK characters will be ${CJK_SIZE_SCALE}x larger)"
+echo ""
+
 echo "1. Copying local fonts"
 cp fonts/arial.ttf ./Arial.ttf
 cp fonts/tahoma.ttf ./Tahoma.ttf
 cp fonts/TimesNewRoman.ttf ./TimesNewRoman.ttf
-cp fonts/NotoSansCJKtc-VF.ttf ./NotoSansCJKtc-VF.ttf
-cp fonts/NotoSansCJKsc-VF.ttf ./NotoSansCJKsc-VF.ttf
+# cp fonts/NotoSansCJKtc-VF.ttf ./NotoSansCJKtc-VF.ttf
+# cp fonts/NotoSansCJKsc-VF.ttf ./NotoSansCJKsc-VF.ttf
+cp fonts/NotoSansSC-VariableFont_wght.ttf ./NotoSansCJKtc.ttf
+# cp fonts/SimSun.ttf ./NotoSansCJKtc.ttf
 
 echo "2. Subsetting Arial.ttf"
 pyftsubset --unicodes-file=unicodes-file.txt Arial.ttf --output-file=Arial.subset.ttf
@@ -21,96 +38,156 @@ pyftsubset --unicodes-file=unicodes-file.txt TimesNewRoman.ttf --output-file=Tim
 echo "5. Subsetting NotoSansCJKtc-VF.ttf (Traditional Chinese)"
 # Variable fonts need to be instantiated to a specific weight first
 # Use weight=400 (Regular) as default
-pyftsubset --unicodes-file=cjk-unicodes.txt NotoSansCJKtc-VF.ttf --output-file=NotoSansCJKtc.subset.ttf --layout-features="*" --no-layout-closure
+pyftsubset --unicodes-file=cjk-unicodes.txt NotoSansCJKtc.ttf --output-file=NotoSansCJKtc.subset.ttf --layout-features="*" --no-layout-closure
 
-echo "6. Subsetting NotoSansCJKsc-VF.ttf (Simplified Chinese)"
-pyftsubset --unicodes-file=cjk-unicodes.txt NotoSansCJKsc-VF.ttf --output-file=NotoSansCJKsc.subset.ttf --layout-features="*" --no-layout-closure
+# echo "6. Subsetting NotoSansCJKsc-VF.ttf (Simplified Chinese)"
+# pyftsubset --unicodes-file=cjk-unicodes.txt NotoSansCJKsc-VF.ttf --output-file=NotoSansCJKsc.subset.ttf --layout-features="*" --no-layout-closure
 
 echo "7. Merging Latin fonts"
 pyftmerge Arial.subset.ttf Tahoma.subset.ttf TimesNewRoman.subset.ttf
 mv merged.ttf merged-latin.ttf
 
 echo "8. Merging CJK fonts"
-pyftmerge NotoSansCJKtc.subset.ttf NotoSansCJKsc.subset.ttf
+# pyftmerge NotoSansCJKtc.subset.ttf NotoSansCJKsc.subset.ttf
+pyftmerge NotoSansCJKtc.subset.ttf --output-file=merged.ttf
 mv merged.ttf merged-cjk.ttf
 
-echo "9. Scaling CJK font to match Latin font unitsPerEm (1000 -> 2048)"
+echo "9. Scaling CJK font to match Latin font unitsPerEm (1000 -> 2048) and apply size scaling"
 # Scale CJK font from 1000 to 2048 unitsPerEm to match Latin fonts
-# Use ttx to dump, scale in XML with Python, then recompile
-ttx merged-cjk.ttf
+# Additionally apply CJK_SIZE_SCALE to make CJK characters larger
+# IMPORTANT: Scale glyph coordinates directly, not just metrics
+
+# Export CJK_SIZE_SCALE for Python script
+export CJK_SIZE_SCALE
 
 python3 << 'PYTHON_SCRIPT'
-import re
-
-scale_factor = 2048.0 / 1000.0
-
-with open("merged-cjk.ttx", "r") as f:
-    content = f.read()
-
-# Scale unitsPerEm
-content = re.sub(r'unitsPerEm value="1000"', 'unitsPerEm value="2048"', content)
-
-# Scale hhea table values
-def scale_hhea(match):
-    tag = match.group(1)
-    value = int(match.group(2))
-    scaled = int(value * scale_factor)
-    return f'{tag} value="{scaled}"'
-
-content = re.sub(r'(ascent|descent|lineGap|advanceWidthMax|minLeftSideBearing|minRightSideBearing|xMaxExtent) value="(-?\d+)"', scale_hhea, content)
-
-# Scale OS/2 table values
-def scale_os2(match):
-    tag = match.group(1)
-    value = int(match.group(2))
-    scaled = int(value * scale_factor)
-    return f'{tag} value="{scaled}"'
-
-content = re.sub(r'(sTypoAscender|sTypoDescender|sTypoLineGap|usWinAscent|usWinDescent|sxHeight|sCapHeight) value="(-?\d+)"', scale_os2, content)
-
-# Scale hmtx advanceWidth and lsb
-def scale_hmtx(match):
-    width = int(match.group(1))
-    lsb = int(match.group(2))
-    return f'width="{int(width * scale_factor)}" lsb="{int(lsb * scale_factor)}"'
-
-content = re.sub(r'width="(\d+)" lsb="(-?\d+)"', scale_hmtx, content)
-
-# Scale glyf coordinates (xMin, xMax, yMin, yMax)
-def scale_glyf_bbox(match):
-    attr = match.group(1)
-    value = int(match.group(2))
-    scaled = int(value * scale_factor)
-    return f'{attr}="{scaled}"'
-
-content = re.sub(r'(xMin|xMax|yMin|yMax)="(-?\d+)"', scale_glyf_bbox, content)
-
-# Remove variable font tables (vhea, vmtx) as they cause merge issues
-content = re.sub(r'<vhea>.*?</vhea>', '', content, flags=re.DOTALL)
-content = re.sub(r'<vmtx>.*?</vmtx>', '', content, flags=re.DOTALL)
-
-with open("merged-cjk.ttx", "w") as f:
-    f.write(content)
-
-print("Scaled CJK font metrics from 1000 to 2048 unitsPerEm")
-PYTHON_SCRIPT
-
-ttx merged-cjk.ttx
-mv merged-cjk#1.ttf merged-cjk-scaled.ttf
-rm merged-cjk.ttx
-
-# Remove variable font tables from the TTF file
-python3 << 'PYTHON_SCRIPT2'
 from fontTools import ttLib
+import os
 
-font = ttLib.TTFont("merged-cjk-scaled.ttf")
-# Remove variable font tables if they exist
+# Base scale to match unitsPerEm (1000 -> 2048)
+base_scale = 2048.0 / 1000.0
+# Additional scale from config
+cjk_size_scale = float(os.environ.get('CJK_SIZE_SCALE', '2.0'))
+# Combined scale factor
+scale_factor = base_scale * cjk_size_scale
+
+print(f"Applying scale factor: {base_scale:.3f} (unitsPerEm) × {cjk_size_scale:.2f} (size) = {scale_factor:.3f} (total)")
+print("Scaling glyph coordinates (not just metrics)...")
+
+font = ttLib.TTFont("merged-cjk.ttf")
+
+# Scale head table
+head = font['head']
+head.unitsPerEm = 2048
+
+# Scale hhea table
+hhea = font['hhea']
+hhea.ascent = int(hhea.ascent * scale_factor)
+hhea.descent = int(hhea.descent * scale_factor)
+hhea.lineGap = int(hhea.lineGap * scale_factor)
+hhea.advanceWidthMax = int(hhea.advanceWidthMax * scale_factor)
+hhea.minLeftSideBearing = int(hhea.minLeftSideBearing * scale_factor)
+hhea.minRightSideBearing = int(hhea.minRightSideBearing * scale_factor)
+hhea.xMaxExtent = int(hhea.xMaxExtent * scale_factor)
+
+# Scale OS/2 table
+if 'OS/2' in font:
+    os2 = font['OS/2']
+    os2.sTypoAscender = int(os2.sTypoAscender * scale_factor)
+    os2.sTypoDescender = int(os2.sTypoDescender * scale_factor)
+    os2.sTypoLineGap = int(os2.sTypoLineGap * scale_factor)
+    os2.usWinAscent = int(os2.usWinAscent * scale_factor)
+    os2.usWinDescent = int(os2.usWinDescent * scale_factor)
+    if hasattr(os2, 'sxHeight'):
+        os2.sxHeight = int(os2.sxHeight * scale_factor)
+    if hasattr(os2, 'sCapHeight'):
+        os2.sCapHeight = int(os2.sCapHeight * scale_factor)
+
+# Scale hmtx table (advanceWidth and lsb)
+hmtx = font['hmtx']
+for glyph_name in hmtx.metrics:
+    advance_width, lsb = hmtx.metrics[glyph_name]
+    hmtx.metrics[glyph_name] = (int(advance_width * scale_factor), int(lsb * scale_factor))
+
+# Scale glyf table - THIS IS THE KEY: scale all coordinates, not just bbox
+if 'glyf' in font:
+    glyf = font['glyf']
+    glyph_count = 0
+    for glyph_name in glyf.keys():
+        glyph = glyf[glyph_name]
+
+        if glyph.isComposite():
+            # For composite glyphs, scale the component positions and transforms
+            for component in glyph.components:
+                # Scale component position
+                if hasattr(component, 'x') and component.x is not None:
+                    component.x = int(component.x * scale_factor)
+                if hasattr(component, 'y') and component.y is not None:
+                    component.y = int(component.y * scale_factor)
+                # Scale transform matrix if present (for scaling components)
+                if hasattr(component, 'transform'):
+                    transform = component.transform
+                    if hasattr(transform, 'xx') and transform.xx is not None:
+                        # Transform matrix: scale the scale factors
+                        # Note: We don't scale translation (dx, dy) here as they're already scaled above
+                        pass  # Keep transform as is, position already scaled
+            # Scale bbox for composite glyphs (check if attributes exist)
+            if hasattr(glyph, 'xMin') and glyph.xMin is not None:
+                glyph.xMin = int(glyph.xMin * scale_factor)
+            if hasattr(glyph, 'xMax') and glyph.xMax is not None:
+                glyph.xMax = int(glyph.xMax * scale_factor)
+            if hasattr(glyph, 'yMin') and glyph.yMin is not None:
+                glyph.yMin = int(glyph.yMin * scale_factor)
+            if hasattr(glyph, 'yMax') and glyph.yMax is not None:
+                glyph.yMax = int(glyph.yMax * scale_factor)
+        else:
+            # For simple glyphs, scale all coordinates
+            if hasattr(glyph, 'coordinates') and glyph.coordinates:
+                # GlyphCoordinates is a special object, scale each coordinate
+                from fontTools.ttLib.tables._g_l_y_f import GlyphCoordinates
+                coords = glyph.coordinates
+                # Scale each coordinate point
+                scaled_coords = []
+                for i in range(len(coords)):
+                    x, y = coords[i]
+                    scaled_coords.append((int(x * scale_factor), int(y * scale_factor)))
+                glyph.coordinates = GlyphCoordinates(scaled_coords)
+
+                # Recalculate bbox from scaled coordinates
+                xs = [c[0] for c in scaled_coords]
+                ys = [c[1] for c in scaled_coords]
+                if xs and ys:
+                    glyph.xMin = min(xs)
+                    glyph.xMax = max(xs)
+                    glyph.yMin = min(ys)
+                    glyph.yMax = max(ys)
+            else:
+                # Fallback: scale bbox directly (shouldn't happen normally)
+                # Also handles empty glyphs - check if attributes exist
+                if hasattr(glyph, 'xMin') and glyph.xMin is not None:
+                    glyph.xMin = int(glyph.xMin * scale_factor)
+                if hasattr(glyph, 'xMax') and glyph.xMax is not None:
+                    glyph.xMax = int(glyph.xMax * scale_factor)
+                if hasattr(glyph, 'yMin') and glyph.yMin is not None:
+                    glyph.yMin = int(glyph.yMin * scale_factor)
+                if hasattr(glyph, 'yMax') and glyph.yMax is not None:
+                    glyph.yMax = int(glyph.yMax * scale_factor)
+
+        glyph_count += 1
+        if glyph_count % 1000 == 0:
+            print(f"  Scaled {glyph_count} glyphs...")
+
+print(f"  Scaled {glyph_count} glyphs total")
+
+# Remove variable font tables
 for table in ['vhea', 'vmtx', 'fvar', 'avar', 'HVAR', 'VVAR', 'MVAR']:
     if table in font:
         del font[table]
+
 font.save("merged-cjk-scaled.ttf")
-print("Removed variable font tables")
-PYTHON_SCRIPT2
+print(f"Scaled CJK font: unitsPerEm 1000->2048, size scale {cjk_size_scale:.2f}x")
+print("✓ Glyph coordinates scaled (characters will actually grow larger)")
+PYTHON_SCRIPT
 
 echo "10. Merging all fonts"
 pyftmerge merged-latin.ttf merged-cjk-scaled.ttf
