@@ -21,15 +21,57 @@ CJK_SIZE_SCALE=${CJK_SIZE_SCALE:-1.05}
 #   - Usage: CJK_FONT_WEIGHT=700 ./update-font.sh
 CJK_FONT_WEIGHT=${CJK_FONT_WEIGHT:-400}
 
+# ADDITIONAL_FONTS: Additional fonts to include (space-separated list)
+#   - Default: empty (only Arial will be included)
+#   - Fonts must exist in fonts/ directory
+#   - Arial.ttf is always included and cannot be disabled
+#   - Usage: ADDITIONAL_FONTS="tahoma.ttf TimesNewRoman.ttf" ./update-font.sh
+ADDITIONAL_FONTS=${ADDITIONAL_FONTS:-""}
+
 echo "Configuration:"
 echo "  CJK_SIZE_SCALE = $CJK_SIZE_SCALE (CJK characters will be ${CJK_SIZE_SCALE}x larger)"
 echo "  CJK_FONT_WEIGHT = $CJK_FONT_WEIGHT (400=Regular, 500=Medium, 600=SemiBold, 700=Bold)"
+if [ -n "$ADDITIONAL_FONTS" ]; then
+    echo "  ADDITIONAL_FONTS = $ADDITIONAL_FONTS"
+else
+    echo "  ADDITIONAL_FONTS = (none, only Arial will be included)"
+fi
 echo ""
 
 echo "1. Copying local fonts"
-cp fonts/arial.ttf ./Arial.ttf
-cp fonts/tahoma.ttf ./Tahoma.ttf
-cp fonts/TimesNewRoman.ttf ./TimesNewRoman.ttf
+
+# Select Arial font based on CJK_FONT_WEIGHT
+if [ "$CJK_FONT_WEIGHT" = "600" ] || [ "$CJK_FONT_WEIGHT" = "700" ]; then
+    # Use Arial Bold for SemiBold or Bold CJK fonts
+    if [ -f "fonts/arialbd.ttf" ]; then
+        echo "  Using Arial Bold (arialbd.ttf) for CJK weight $CJK_FONT_WEIGHT"
+        cp fonts/arialbd.ttf ./Arial.ttf
+    else
+        echo "  WARNING: arialbd.ttf not found, using arial.ttf instead"
+        cp fonts/arial.ttf ./Arial.ttf
+    fi
+else
+    # Use regular Arial for Regular or Medium CJK fonts
+    cp fonts/arial.ttf ./Arial.ttf
+fi
+
+
+# Copy additional fonts if specified
+if [ -n "$ADDITIONAL_FONTS" ]; then
+    echo "  Copying additional fonts..."
+    for font_file in $ADDITIONAL_FONTS; do
+        if [ -f "fonts/$font_file" ]; then
+            # Copy with original name (without .ttf extension for merge step)
+            font_name=$(basename "$font_file" .ttf)
+            cp "fonts/$font_file" "./${font_name^}.ttf"  # Capitalize first letter
+            echo "    ✓ Copied $font_file -> ${font_name^}.ttf"
+        else
+            echo "    ✗ WARNING: fonts/$font_file not found, skipping"
+        fi
+    done
+else
+    echo "  No additional fonts specified (only Arial will be included)"
+fi
 # cp fonts/NotoSansCJKtc-VF.ttf ./NotoSansCJKtc-VF.ttf
 # cp fonts/NotoSansCJKsc-VF.ttf ./NotoSansCJKsc-VF.ttf
 
@@ -79,14 +121,32 @@ font.save("NotoSansCJKtc.ttf")
 print("✓ Saved instantiated font as static font")
 PYTHON_INSTANTIATE
 
-echo "2. Subsetting Arial.ttf"
+echo "2. Subsetting Latin fonts"
+
+# Build list of fonts to subset (Arial is always included)
+LATIN_FONTS="Arial.ttf"
+SUBSET_FONTS="Arial.subset.ttf"
+
+# Subset Arial
+echo "  Subsetting Arial.ttf..."
 pyftsubset --unicodes-file=unicodes-file.txt Arial.ttf --output-file=Arial.subset.ttf
 
-echo "3. Subsetting Tahoma.ttf"
-pyftsubset --unicodes-file=unicodes-file.txt Tahoma.ttf --output-file=Tahoma.subset.ttf
+# Subset additional fonts if specified
+if [ -n "$ADDITIONAL_FONTS" ]; then
+    for font_file in $ADDITIONAL_FONTS; do
+        if [ -f "fonts/$font_file" ]; then
+            font_name=$(basename "$font_file" .ttf)
+            font_name_cap="${font_name^}"  # Capitalize first letter
+            subset_name="${font_name_cap}.subset.ttf"
 
-echo "4. Subsetting TimesNewRoman.ttf"
-pyftsubset --unicodes-file=unicodes-file.txt TimesNewRoman.ttf --output-file=TimesNewRoman.subset.ttf
+            echo "  Subsetting ${font_name_cap}.ttf..."
+            pyftsubset --unicodes-file=unicodes-file.txt "${font_name_cap}.ttf" --output-file="$subset_name"
+
+            LATIN_FONTS="$LATIN_FONTS ${font_name_cap}.ttf"
+            SUBSET_FONTS="$SUBSET_FONTS $subset_name"
+        fi
+    done
+fi
 
 echo "5. Subsetting NotoSansCJKtc.ttf (Instantiated CJK font)"
 # Font already instantiated to specified weight in step 1.1
@@ -96,9 +156,9 @@ pyftsubset --unicodes-file=cjk-unicodes.txt NotoSansCJKtc.ttf --output-file=Noto
 # pyftsubset --unicodes-file=cjk-unicodes.txt NotoSansCJKsc-VF.ttf --output-file=NotoSansCJKsc.subset.ttf --layout-features="*" --no-layout-closure
 
 echo "7. Merging Latin fonts"
-# pyftmerge Arial.subset.ttf Tahoma.subset.ttf TimesNewRoman.subset.ttf
-pyftmerge Arial.subset.ttf Tahoma.subset.ttf
-
+# Merge all subset fonts
+echo "  Merging: $SUBSET_FONTS"
+pyftmerge $SUBSET_FONTS
 mv merged.ttf merged-latin.ttf
 
 echo "8. Merging CJK fonts"
@@ -287,4 +347,6 @@ echo "13. Testing merged font"
 bash test-font.sh || echo "WARNING: Test script failed or merged.ttf not available"
 
 echo "14. Removing artifacts"
+mv merged.ttf keep_result
 rm *.ttf *.ttx merged#1.ttf 2>/dev/null || true
+mv keep_result merged.ttf

@@ -64,20 +64,41 @@ Script `update-font.sh` hỗ trợ điều chỉnh kích thước và độ đ�
 
 **Lưu ý:** Chỉ áp dụng cho variable fonts (NotoSansSC). Nếu dùng static fonts (SimSun) sẽ bị bỏ qua.
 
-## 3. Kết hợp cả hai
+## 3. Additional Fonts
 
-Bạn có thể kết hợp cả size và weight:
+Thêm các font khác vào merged font (ngoài Arial):
 
 ```bash
-# Chữ to và đậm
-CJK_SIZE_SCALE=1.5 CJK_FONT_WEIGHT=700 ./update-font.sh
+# Chỉ Arial (mặc định)
+./update-font.sh
 
-# Chữ đậm kích thước bình thường
-CJK_FONT_WEIGHT=700 ./update-font.sh
+# Thêm Tahoma
+ADDITIONAL_FONTS="tahoma.ttf" ./update-font.sh
+
+# Thêm nhiều font
+ADDITIONAL_FONTS="tahoma.ttf TimesNewRoman.ttf" ./update-font.sh
+
+# Font phải tồn tại trong thư mục fonts/
+# Arial luôn được nhúng và không thể tắt
+```
+
+**Lưu ý:**
+- Arial.ttf luôn được nhúng (không thể tắt)
+- Nếu `CJK_FONT_WEIGHT` là 600 (SemiBold) hoặc 700 (Bold), sẽ tự động dùng `arialbd.ttf` thay vì `arial.ttf`
+- Các font trong `ADDITIONAL_FONTS` phải tồn tại trong thư mục `fonts/`
+
+## 4. Kết hợp tất cả
+
+Bạn có thể kết hợp tất cả các tùy chọn:
+
+```bash
+# Chữ to, đậm, và thêm Tahoma
+CJK_SIZE_SCALE=1.5 CJK_FONT_WEIGHT=700 ADDITIONAL_FONTS="tahoma.ttf" ./update-font.sh
 
 # Xuất biến để dùng nhiều lần
 export CJK_SIZE_SCALE=1.2
 export CJK_FONT_WEIGHT=600
+export ADDITIONAL_FONTS="tahoma.ttf TimesNewRoman.ttf"
 ./update-font.sh
 ```
 
