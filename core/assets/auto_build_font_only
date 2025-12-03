@@ -1,0 +1,38 @@
+#!/bin/bash
+
+set -e
+
+# # Chỉ Arial (mặc định)
+# ./update-font.sh
+
+# # Thêm Tahoma
+# ADDITIONAL_FONTS="tahoma.ttf" ./update-font.sh
+
+# # Thêm nhiều font
+# ADDITIONAL_FONTS="tahoma.ttf TimesNewRoman.ttf" ./update-font.sh
+
+# # SemiBold CJK → tự động dùng arialbd.ttf
+# CJK_FONT_WEIGHT=600 ADDITIONAL_FONTS="tahoma.ttf" ./update-font.sh
+
+# # Bold CJK → tự động dùng arialbd.ttf
+# CJK_FONT_WEIGHT=700 ./update-font.sh
+
+# # Kết hợp tất cả
+# CJK_SIZE_SCALE=1.2 CJK_FONT_WEIGHT=700 ADDITIONAL_FONTS="tahoma.ttf TimesNewRoman.ttf" ./update-font.sh
+
+# CJK_FONT_WEIGHT: Font weight for CJK variable fonts
+#   - 400 = Regular (default)
+#   - 500 = Medium
+#   - 600 = SemiBold
+#   - 700 = Bold
+#   - Usage: CJK_FONT_WEIGHT=700 ./update-font.sh
+
+
+# CJK_FONT_WEIGHT=400 CJK_SIZE_SCALE=1.05 ADDITIONAL_FONTS="tahoma.ttf TimesNewRoman.ttf" ./update-font.sh #NotoSansSC
+# CJK_FONT_WEIGHT=400 CJK_SIZE_SCALE=1.05 ./update-font.sh #NotoSansSC
+CJK_FONT_WEIGHT=400 CJK_SIZE_SCALE=1.6 ./update-font.sh #SimSun
+mv merged.ttf merged_regular._ttf
+
+CJK_FONT_WEIGHT=600 CJK_SIZE_SCALE=1.6 ./update-font.sh #SimSun
+mv merged.ttf merged_bold.ttf
+mv merged_regular._ttf merged_regular.ttf
