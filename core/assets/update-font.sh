@@ -179,7 +179,7 @@ echo "9. Scaling CJK font to match Latin font unitsPerEm (1000 -> 2048) and appl
 # Use awk for floating point comparison
 SKIP_SCALE=$(awk "BEGIN {print ($CJK_SIZE_SCALE == 1.0) ? 1 : 0}")
 if [ "$SKIP_SCALE" = "1" ]; then
-    echo "  CJK_SIZE_SCALE = 1.0, updating unitsPerEm to 2048 (no glyph scaling)"
+    echo "  CJK_SIZE_SCALE = 1.0, updating unitsPerEm to 2048 (scaling glyphs to maintain visual size)"
     echo "  Removing variable font tables to avoid merge conflicts..."
     python3 << 'PYTHON_CLEANUP'
 from fontTools import ttLib
@@ -198,8 +198,8 @@ print(f"  Scale factor for metrics: {scale_factor:.3f}")
 # Update unitsPerEm to match Latin fonts
 font['head'].unitsPerEm = target_units
 
-# Scale metrics to match new unitsPerEm (but NOT glyph coordinates)
-# This ensures merge compatibility while keeping visual size the same
+# Scale metrics and glyph coordinates to match new unitsPerEm
+# This ensures merge compatibility and maintains original visual size
 hhea = font['hhea']
 hhea.ascent = int(hhea.ascent * scale_factor)
 hhea.descent = int(hhea.descent * scale_factor)
@@ -299,7 +299,7 @@ if removed:
     print(f"  ✓ Removed variable font tables: {', '.join(removed)}")
 
 font.save("merged-cjk-scaled.ttf")
-print(f"  ✓ Updated unitsPerEm {current_units} -> {target_units} (metrics scaled, glyphs NOT scaled)")
+print(f"  ✓ Updated unitsPerEm {current_units} -> {target_units} (metrics and glyph coordinates scaled to maintain visual size)")
 PYTHON_CLEANUP
 else
     # Export CJK_SIZE_SCALE for Python script
