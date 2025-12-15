@@ -789,7 +789,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             return Ok(FrameControl::Continue);
         }
 
-        let object = object_val.coerce_to_object(self);
+        let object = object_val.coerce_to_object_or_bare(self)?;
 
         let method_name = if method_name == Value::Undefined {
             istr!(self, "")
@@ -811,20 +811,15 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn action_cast_op(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let obj = self.context.avm1.pop();
-        let constr = self.context.avm1.pop().coerce_to_object(self);
+        let constr = self.context.avm1.pop();
+        // For some reason, FP does this useless extra coercion.
+        if obj.is_primitive() {
+            let _ = obj.coerce_to_object(self)?;
+        }
 
-        let is_instance_of = if let Some(obj) = obj.as_object(self) {
-            let prototype = constr
-                .get(istr!(self, "prototype"), self)?
-                .coerce_to_object(self);
-            obj.is_instance_of(self, constr, prototype)?
-        } else {
-            false
-        };
-
+        let is_instance_of = obj.instance_of(constr, self)?;
         let result = if is_instance_of { obj } else { Value::Null };
         self.context.avm1.push(result);
-
         Ok(FrameControl::Continue)
     }
 
@@ -1034,14 +1029,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn action_extends(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let superclass = self.context.avm1.pop().coerce_to_object(self);
-        let subclass = self.context.avm1.pop().coerce_to_object(self);
+        let superclass = self.context.avm1.pop().coerce_to_object_or_bare(self)?;
+        let subclass = self.context.avm1.pop().coerce_to_object_or_bare(self)?;
 
         //TODO: What happens if we try to extend an object which has no `prototype`?
         //e.g. `class Whatever extends Object.prototype` or `class Whatever extends 5`
-        let super_prototype = superclass
-            .get(istr!(self, "prototype"), self)?
-            .coerce_to_object(self);
+        let super_prototype = superclass.get(istr!(self, "prototype"), self)?;
 
         let sub_prototype = Object::new(self.strings(), Some(super_prototype));
 
@@ -1068,7 +1061,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let name_val = self.context.avm1.pop();
         let name = name_val.coerce_to_string(self)?;
         let object_val = self.context.avm1.pop();
-        let object = object_val.coerce_to_object(self);
+        let object = object_val.coerce_to_object_or_bare(self)?;
 
         let result = object.get(name, self)?;
         self.stack_push(result);
@@ -1435,7 +1428,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn action_implements_op(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let constructor = self.context.avm1.pop().coerce_to_object(self);
+        let constructor = self.context.avm1.pop().coerce_to_object_or_bare(self)?;
         let count = self.context.avm1.pop();
         // Old Flash Players (at least FP9) used to coerce objects as well. However, this was
         // changed at some point and instead the following is logged:
@@ -1456,12 +1449,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             // TODO: If one of the interfaces is not an object, do we leave the
             // whole stack dirty, or...?
             for _ in 0..count {
-                interfaces.push(self.context.avm1.pop().coerce_to_object(self));
+                interfaces.push(self.context.avm1.pop().coerce_to_object_or_bare(self)?);
             }
 
             let prototype = constructor
+                // TODO(moulins): should this use `Object::prototype`?
                 .get(istr!(self, "prototype"), self)?
-                .coerce_to_object(self);
+                .coerce_to_object_or_bare(self)?;
             prototype.set_interfaces(self.gc(), interfaces);
         }
 
@@ -1469,18 +1463,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn action_instance_of(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let constr = self.context.avm1.pop().coerce_to_object(self);
+        let constr = self.context.avm1.pop();
         let obj = self.context.avm1.pop();
-
-        let result = if let Some(obj) = obj.as_object(self) {
-            let prototype = constr
-                .get(istr!(self, "prototype"), self)?
-                .coerce_to_object(self);
-            obj.is_instance_of(self, constr, prototype)?
-        } else {
-            false
-        };
-
+        let result = obj.instance_of(constr, self)?;
         self.context.avm1.push(result.into());
         Ok(FrameControl::Continue)
     }
@@ -1642,7 +1627,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             return Ok(FrameControl::Continue);
         }
 
-        let object = object_val.coerce_to_object(self);
+        let object = object_val.coerce_to_object_or_bare(self)?;
 
         let method_name = if method_name == Value::Undefined {
             istr!(self, "")
@@ -1680,7 +1665,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let args = self.pop_call_args(num_args);
 
         let name_value: Value<'gc> = self.resolve(fn_name)?.into();
-        let constructor = name_value.coerce_to_object(self);
+        let constructor = name_value.coerce_to_object_or_bare(self)?;
         let result = constructor.construct(self, &args)?;
         self.stack_push(result);
 
@@ -1809,7 +1794,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let name_val = self.context.avm1.pop();
         let name = name_val.coerce_to_string(self)?;
 
-        let object = self.context.avm1.pop().coerce_to_object(self);
+        let object = self.context.avm1.pop().coerce_to_object_or_bare(self)?;
         object.set(name, value, self)?;
 
         Ok(FrameControl::Continue)
@@ -1917,7 +1902,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 }
             }
             Value::MovieClip(_) => {
-                let o = target.coerce_to_object(self);
+                let o = target.coerce_to_object_or_bare(self)?;
                 if let Some(clip) = o.as_display_object() {
                     // MovieClips can be targeted directly.
                     self.set_target_clip(Some(clip));
@@ -2088,7 +2073,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn action_target_path(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // Prints out the dot-path for the parameter.
         // Parameter must be a display object (not a string path).
-        let param = self.context.avm1.pop().coerce_to_object(self);
+        let param = self.context.avm1.pop().coerce_to_object_or_bare(self)?;
         let result = if let Some(display_object) = param.as_display_object() {
             let path = display_object.path();
             AvmString::new(self.gc(), path).into()
@@ -2310,7 +2295,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
             value => {
                 // Note that primitives get boxed at this point.
-                let object = value.coerce_to_object(self);
+                let object = value.coerce_to_object_or_bare(self)?;
                 let with_scope = Gc::new(self.gc(), Scope::new_with_scope(self.scope(), object));
                 let mut new_activation = self.with_new_scope("[With]", with_scope);
                 if let ReturnType::Explicit(value) = new_activation.run_actions(code)? {

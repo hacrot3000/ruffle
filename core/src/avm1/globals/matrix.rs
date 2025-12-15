@@ -12,18 +12,18 @@ use ruffle_render::matrix::Matrix;
 use swf::Twips;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "toString" => method(to_string);
-    "identity" => method(identity);
-    "clone" => method(clone);
-    "scale" => method(scale);
-    "rotate" => method(rotate);
-    "translate" => method(translate);
     "concat" => method(concat);
     "invert" => method(invert);
     "createBox" => method(create_box);
     "createGradientBox" => method(create_gradient_box);
-    "transformPoint" => method(transform_point);
+    "clone" => method(clone);
+    "identity" => method(identity);
+    "rotate" => method(rotate);
+    "translate" => method(translate);
+    "scale" => method(scale);
     "deltaTransformPoint" => method(delta_transform_point);
+    "transformPoint" => method(transform_point);
+    "toString" => method(to_string);
 };
 
 pub fn create_class<'gc>(
@@ -40,30 +40,30 @@ pub fn value_to_matrix<'gc>(
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Matrix, Error<'gc>> {
     let a = value
-        .coerce_to_object(activation)
+        .coerce_to_object_or_bare(activation)?
         .get(istr!("a"), activation)?
         .coerce_to_f64(activation)? as f32;
     let b = value
-        .coerce_to_object(activation)
+        .coerce_to_object_or_bare(activation)?
         .get(istr!("b"), activation)?
         .coerce_to_f64(activation)? as f32;
     let c = value
-        .coerce_to_object(activation)
+        .coerce_to_object_or_bare(activation)?
         .get(istr!("c"), activation)?
         .coerce_to_f64(activation)? as f32;
     let d = value
-        .coerce_to_object(activation)
+        .coerce_to_object_or_bare(activation)?
         .get(istr!("d"), activation)?
         .coerce_to_f64(activation)? as f32;
     let tx = Twips::from_pixels(
         value
-            .coerce_to_object(activation)
+            .coerce_to_object_or_bare(activation)?
             .get(istr!("tx"), activation)?
             .coerce_to_f64(activation)?,
     );
     let ty = Twips::from_pixels(
         value
-            .coerce_to_object(activation)
+            .coerce_to_object_or_bare(activation)?
             .get(istr!("ty"), activation)?
             .coerce_to_f64(activation)?,
     );
@@ -204,7 +204,7 @@ fn constructor<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if args.is_empty() {
-        apply_matrix_to_object(Matrix::IDENTITY, this, activation)?;
+        identity(activation, this, args)?;
     } else {
         if let Some(a) = args.get(0) {
             this.set(istr!("a"), *a, activation)?;
@@ -234,7 +234,12 @@ fn identity<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    apply_matrix_to_object(Matrix::IDENTITY, this, activation)?;
+    this.set(istr!("d"), 1.0.into(), activation)?;
+    this.set(istr!("a"), 1.0.into(), activation)?;
+    this.set(istr!("c"), 0.0.into(), activation)?;
+    this.set(istr!("b"), 0.0.into(), activation)?;
+    this.set(istr!("ty"), 0.0.into(), activation)?;
+    this.set(istr!("tx"), 0.0.into(), activation)?;
     Ok(Value::Undefined)
 }
 

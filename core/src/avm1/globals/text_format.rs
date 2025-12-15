@@ -45,6 +45,7 @@ macro_rules! method {
 }
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
+    "getTextExtent" => method(method!(get_text_extent); DONT_ENUM | DONT_DELETE);
     "font" => property(getter!(font), setter!(set_font));
     "size" => property(getter!(size), setter!(set_size));
     "color" => property(getter!(color), setter!(set_color));
@@ -64,7 +65,6 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "display" => property(getter!(display), setter!(set_display));
     "kerning" => property(getter!(kerning), setter!(set_kerning));
     "letterSpacing" => property(getter!(letter_spacing), setter!(set_letter_spacing));
-    "getTextExtent" => method(method!(get_text_extent); DONT_ENUM | DONT_DELETE);
 };
 
 pub fn create_class<'gc>(
@@ -538,7 +538,7 @@ fn get_text_extent<'gc>(
     temp_edittext.set_new_text_format(text_format.clone());
     temp_edittext.set_text(&text, activation.context);
 
-    let result = Object::new(&activation.context.strings, None);
+    let result = Object::new_without_proto(activation.gc());
     let metrics = temp_edittext
         .layout_metrics()
         .expect("All text boxes should have at least one line at all times");

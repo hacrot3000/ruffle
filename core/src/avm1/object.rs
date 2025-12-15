@@ -145,20 +145,36 @@ impl<'gc> NativeObject<'gc> {
 
 impl<'gc> Object<'gc> {
     /// Retrieve a named property from the object, or its prototype.
-    pub fn get(
+    /// Returns `None` if the property couldn't be found.
+    pub fn get_opt(
         self,
         name: impl Into<AvmString<'gc>>,
         activation: &mut Activation<'_, 'gc>,
-    ) -> Result<Value<'gc>, Error<'gc>> {
+        call_resolve_fn: bool,
+    ) -> Result<Option<Value<'gc>>, Error<'gc>> {
+        // This duplicates logic already present in `SuperObject::proto` and so doesn't seem necessary.
+        // But removing it would make `SuperObject`s go through an extra iteration in `search_prototype`,
+        // which impacts the maximum possible depth before `Error::PrototypeRecursionLimit`.
+        // TODO(moulins): Test this limit and figure out what is correct.
         let (this, proto) = if let Some(super_object) = self.as_super_object() {
             (super_object.this(), super_object.proto(activation))
         } else {
             (self, Value::Object(self))
         };
-        match search_prototype(proto, name.into(), activation, this, true)? {
-            Some((value, _depth)) => Ok(value),
-            None => Ok(Value::Undefined),
-        }
+
+        let result = search_prototype(proto, name.into(), activation, this, call_resolve_fn)?;
+        Ok(result.map(|(value, _depth)| value))
+    }
+
+    /// Retrieve a named property from the object, or its prototype.
+    /// If the property couldn't be found, try to find and call a `__resolve` handler.
+    pub fn get(
+        self,
+        name: impl Into<AvmString<'gc>>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        self.get_opt(name, activation, true)
+            .map(|v| v.unwrap_or(Value::Undefined))
     }
 
     /// Retrieve a non-virtual property from the object, or its prototype.
@@ -261,8 +277,10 @@ impl<'gc> Object<'gc> {
             }
         }
 
+        // 'special' method calls appear to skip the `__resolve` fallback logic
+        let call_resolve_fn = !matches!(reason, ExecutionReason::Special);
         let (method, depth) =
-            match search_prototype(Value::Object(self), name, activation, self, true)? {
+            match search_prototype(Value::Object(self), name, activation, self, call_resolve_fn)? {
                 Some((Value::Object(method), depth)) => (method, depth),
                 _ => return Ok(Value::Undefined),
             };
@@ -307,6 +325,8 @@ impl<'gc> Object<'gc> {
             proto_stack.push(p);
         }
 
+        // TODO(moulins): should we guard against infinite loops here?
+        // A recursive prototype chain will hang Flash Player.
         while let Some(this_proto) = proto_stack.pop() {
             if Object::ptr_eq(this_proto, prototype) {
                 return Ok(true);
@@ -322,6 +342,7 @@ impl<'gc> Object<'gc> {
                         return Ok(true);
                     }
 
+                    // TODO(moulins): should this use `Object::prototype`?
                     if let Value::Object(o) = interface.get(istr!("prototype"), activation)? {
                         proto_stack.push(o);
                     }
@@ -343,6 +364,9 @@ impl<'gc> Object<'gc> {
 
     /// Check if this object is in the prototype chain of the specified test object.
     pub fn is_prototype_of(self, activation: &mut Activation<'_, 'gc>, other: Object<'gc>) -> bool {
+        // TODO(moulins): should we guard against infinite loops here?
+        // A recursive prototype chain will hang Flash Player.
+
         let mut proto = other.proto(activation);
 
         while let Value::Object(proto_ob) = proto {

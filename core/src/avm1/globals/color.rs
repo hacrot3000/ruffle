@@ -15,10 +15,10 @@ use ruffle_macros::istr;
 use swf::Fixed8;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "getRGB" => method(get_rgb; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "getTransform" => method(get_transform; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "setRGB" => method(set_rgb; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "setTransform" => method(set_transform; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "getRGB" => method(get_rgb; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "getTransform" => method(get_transform; DONT_ENUM | DONT_DELETE | READ_ONLY);
 };
 
 pub fn create_class<'gc>(
@@ -203,7 +203,7 @@ fn set_transform<'gc>(
         let transform = args
             .get(0)
             .unwrap_or(&Value::Undefined)
-            .coerce_to_object(activation);
+            .coerce_to_object_or_bare(activation)?;
         set_color_mult(
             activation,
             transform,

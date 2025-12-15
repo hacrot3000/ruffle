@@ -97,7 +97,7 @@ impl<'gc> Xml<'gc> {
                 root,
                 xml_decl: Lock::new(None),
                 doctype: Lock::new(None),
-                id_map: Object::new(context, None),
+                id_map: Object::new_without_proto(context.gc()),
                 status: Cell::new(XmlStatus::NoError),
             },
         ));
@@ -253,20 +253,21 @@ impl<'gc> Xml<'gc> {
 }
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "docTypeDecl" => property(doc_type_decl; READ_ONLY);
-    "ignoreWhite" => bool(false);
-    "contentType" => string("application/x-www-form-urlencoded"; READ_ONLY);
-    "xmlDecl" => property(xml_decl);
-    "idMap" => property(id_map);
-    "status" => property(status);
     "createElement" => method(create_element);
     "createTextNode" => method(create_text_node);
-    "getBytesLoaded" => method(get_bytes_loaded);
-    "getBytesTotal" => method(get_bytes_total);
     "parseXML" => method(parse_xml);
     "load" => method(load);
     "sendAndLoad" => method(send_and_load);
     "onData" => method(on_data);
+    "getBytesLoaded" => method(get_bytes_loaded);
+    "getBytesTotal" => method(get_bytes_total);
+    "contentType" => string("application/x-www-form-urlencoded"; READ_ONLY);
+    "docTypeDecl" => property(doc_type_decl; READ_ONLY);
+    "ignoreWhite" => bool(false);
+    "status" => property(status);
+    "xmlDecl" => property(xml_decl);
+    // TODO Looks like idMap is not a built-in property.
+    "idMap" => property(id_map);
 };
 
 pub fn create_class<'gc>(

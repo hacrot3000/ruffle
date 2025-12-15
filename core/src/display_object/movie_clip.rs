@@ -349,6 +349,7 @@ impl<'gc> MovieClip<'gc> {
         let data = MovieClipData::new(shared, activation.gc());
         data.flags.set(MovieClipFlags::PLAYING);
         data.base.base.set_is_root(true);
+        data.base.base.set_instantiated_by_timeline(true);
 
         let mc = MovieClip(Gc::new(activation.gc(), data));
         if let Some(loader_info) = loader_info {
@@ -838,7 +839,7 @@ impl<'gc> MovieClip<'gc> {
                 // The goto is instead queued and run once the frame script is completed.
                 self.0.queued_goto_frame.set(Some(frame));
             } else {
-                self.run_goto(context, frame, false);
+                self.run_goto(context, frame, GotoType::Explicit);
             }
         } else if self.movie().is_action_script_3() {
             // Despite not running, the goto still overwrites the currently enqueued frame.
@@ -1276,7 +1277,7 @@ impl<'gc> MovieClip<'gc> {
                     self.0.increment_current_frame();
                 }
             }
-            NextFrame::First => return self.run_goto(context, 1, true),
+            NextFrame::First => return self.run_goto(context, 1, GotoType::Implicit),
             NextFrame::Same => self.stop(context),
         }
 
@@ -1409,6 +1410,12 @@ impl<'gc> MovieClip<'gc> {
                     child.set_parent(context, Some(self.into()));
                     child.set_place_frame(self.current_frame());
 
+                    // If this MC hasn't had an `object2` allocated yet, this
+                    // child will be constructed by `Sprite.constructChildren`,
+                    // not by the timeline
+                    let has_object2_allocated = self.object2().is_none();
+                    child.set_manual_frame_construct(has_object2_allocated);
+
                     // Apply PlaceObject parameters.
                     child.apply_place_object(context, place_object);
                     if let Some(name) = &place_object.name {
@@ -1513,12 +1520,14 @@ impl<'gc> MovieClip<'gc> {
         }
     }
 
-    pub fn run_goto(
+    fn run_goto(
         mut self,
         context: &mut UpdateContext<'gc>,
         frame: FrameNumber,
-        is_implicit: bool,
+        goto_type: GotoType,
     ) {
+        let is_implicit = matches!(goto_type, GotoType::Implicit);
+
         if cfg!(feature = "timeline_debug") {
             tracing::debug!(
                 "[{}]: {} from frame {} to frame {}",
@@ -1771,14 +1780,28 @@ impl<'gc> MovieClip<'gc> {
             .filter(|params| params.frame >= frame)
             .for_each(|goto| run_goto_command(self, context, goto));
 
-        // On AVM2, all explicit gotos act the same way as a normal new frame,
-        // save for the lack of an enterFrame event. Since this must happen
-        // before AS3 continues execution, this is effectively a "recursive
-        // frame".
-        //
-        // Our queued place tags will now run at this time, too.
-        if !is_implicit {
-            run_inner_goto_frame(context, &removed_frame_scripts, self);
+        match goto_type {
+            GotoType::Implicit => {}
+
+            GotoType::ExplicitQueued if self.swf_version() <= 9 => {
+                // Specifically for gotos that were queued because they were
+                // called in a framescript in SWFv9, we *only* run frame
+                // scripts, not a full inner goto frame.
+                self.check_has_pending_script();
+                self.run_frame_scripts(context);
+
+                // NOTE: FP doesn't use call recursion to implement this, so
+                // having a `nextFrame` on frame 1 and `prevFrame` on frame 2
+                // won't cause a stack overflow. However, it will hang the player.
+            }
+
+            // On AVM2, all explicit gotos act the same way as a normal new frame,
+            // save for the lack of an enterFrame event. Since this must happen
+            // before AS3 continues execution, this is effectively a "recursive
+            // frame".
+            //
+            // Our queued place tags will now run at this time, too.
+            _ => run_inner_goto_frame(context, &removed_frame_scripts, self),
         }
 
         self.assert_expected_tag_end(hit_target_frame);
@@ -1881,8 +1904,9 @@ impl<'gc> MovieClip<'gc> {
                 );
 
                 if let Ok(prototype) = constructor
+                    // TODO(moulins): should this use `Object::prototype`?
                     .get(istr!("prototype"), &mut activation)
-                    .map(|v| v.coerce_to_object(&mut activation))
+                    .and_then(|v| v.coerce_to_object_or_bare(&mut activation))
                 {
                     let object = Avm1Object::new_with_native(
                         &activation.context.strings,
@@ -2380,8 +2404,13 @@ impl<'gc> MovieClip<'gc> {
 
         let goto_frame = self.0.queued_goto_frame.take();
         if let Some(frame) = goto_frame {
-            self.run_goto(context, frame, false);
+            self.run_goto(context, frame, GotoType::ExplicitQueued);
         }
+    }
+
+    fn check_has_pending_script(self) {
+        let has_pending_script = self.has_frame_script(self.0.current_frame.get());
+        self.0.has_pending_script.set(has_pending_script);
     }
 }
 
@@ -2475,7 +2504,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 self.construct_as_avm2_object(context);
                 self.on_construction_complete(context);
                 // If we're in the load frame and we were constructed by ActionScript,
-                // then we want to wait for the DisplayObject constructor to run
+                // then we want to wait for the Sprite constructor to run
                 // 'construct_frame' on children. This is observable by ActionScript -
                 // before calling super(), 'this.numChildren' will show a non-zero number
                 // when we have children placed on the load frame, but 'this.getChildAt(0)'
@@ -2485,12 +2514,28 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 let running_construct_frame = self
                     .0
                     .contains_flag(MovieClipFlags::RUNNING_CONSTRUCT_FRAME);
-                // The supercall constructor for display objects is responsible
-                // for triggering construct_frame on frame 1.
                 for child in self.iter_render_list() {
-                    if running_construct_frame && child.object2().is_none() {
-                        continue;
+                    // Under some conditions, we won't run `construct_frame` on
+                    // a not-yet-constructed child
+                    if child.object2().is_none() {
+                        // Avoid running recursively- if `Sprite.constructChildren`
+                        // was constructing this clip's children, and somehow
+                        // a child's construction triggered another `construct_frame`
+                        // on this clip, Flash avoids running `construct_frame` on
+                        // the non-constructed children of this clip.
+                        if running_construct_frame {
+                            continue;
+                        }
+
+                        // The supercall constructor for display objects is responsible
+                        // for triggering construct_frame on frame 1 (see above comment).
+                        // However, if the child has already been constructed, we run
+                        // `construct_frame` like normal.
+                        if child.manual_frame_construct() {
+                            continue;
+                        }
                     }
+
                     child.construct_frame(context);
                 }
             }
@@ -2499,8 +2544,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         if *context.frame_phase == FramePhase::Construct {
             // Check for frame-scripts before starting the frame-script phase,
             // to differentiate the pre-existing scripts from those introduced during frame-script phase.
-            let has_pending_script = self.has_frame_script(self.0.current_frame.get());
-            self.0.has_pending_script.set(has_pending_script);
+            self.check_has_pending_script();
         }
     }
 
@@ -4846,4 +4890,10 @@ impl ClipEventHandler {
             action_data,
         }
     }
+}
+
+enum GotoType {
+    Implicit,
+    Explicit,
+    ExplicitQueued,
 }

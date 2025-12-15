@@ -111,11 +111,27 @@ impl<'gc> Object<'gc> {
         ObjectWeak(Gc::downgrade(self.0))
     }
 
-    pub fn new(context: &StringContext<'gc>, proto: Option<Object<'gc>>) -> Self {
+    pub fn new(context: &StringContext<'gc>, proto: Option<impl Into<Value<'gc>>>) -> Self {
+        Self::new_impl(context, proto.map(Into::into), NativeObject::None)
+    }
+
+    pub fn new_with_native(
+        context: &StringContext<'gc>,
+        proto: Option<impl Into<Value<'gc>>>,
+        native: NativeObject<'gc>,
+    ) -> Self {
+        Self::new_impl(context, proto.map(Into::into), native)
+    }
+
+    fn new_impl(
+        context: &StringContext<'gc>,
+        proto: Option<Value<'gc>>,
+        native: NativeObject<'gc>,
+    ) -> Self {
         let object = Self(Gc::new(
             context.gc(),
             RefLock::new(ObjectData {
-                native: NativeObject::None,
+                native,
                 properties: PropertyMap::new(),
                 interfaces: None,
                 watchers: PropertyMap::new(),
@@ -125,21 +141,11 @@ impl<'gc> Object<'gc> {
             object.define_value(
                 context.gc(),
                 istr!(context, "__proto__"),
-                proto.into(),
+                proto,
                 Attribute::DONT_ENUM | Attribute::DONT_DELETE,
             );
         }
         object
-    }
-
-    pub fn new_with_native(
-        context: &StringContext<'gc>,
-        proto: Option<Object<'gc>>,
-        native: NativeObject<'gc>,
-    ) -> Self {
-        let obj = Self::new(context, proto);
-        obj.set_native(context.gc(), native);
-        obj
     }
 
     // Creates a Object, without assigning any __proto__ property.
@@ -155,7 +161,7 @@ impl<'gc> Object<'gc> {
         ))
     }
 
-    /// Gets the value of a data property on this object.
+    /// Gets the value of a data property on this object, ignoring attributes.
     ///
     /// Doesn't look up the prototype chain and ignores virtual properties, thus cannot cause
     /// any side-effects.
@@ -171,7 +177,7 @@ impl<'gc> Object<'gc> {
             .map_or(Value::Undefined, |property| property.data())
     }
 
-    /// Sets a data property on this object.
+    /// Sets a data property on this object, ignoring attributes.
     ///
     /// Doesn't look up the prototype chain and ignores virtual properties, but still might
     /// call to watchers.
@@ -210,7 +216,8 @@ impl<'gc> Object<'gc> {
             .collect()
     }
 
-    /// Retrieve a named, non-virtual property from this object exclusively.
+    /// Retrieve a named, non-virtual property from this object exclusively, taking
+    /// attributes into account.
     ///
     /// This function should not inspect prototype chains. Instead, use
     /// `get_stored` to do ordinary property look-up and resolution.
@@ -643,6 +650,7 @@ impl<'gc> Object<'gc> {
     }
 
     /// Retrieve the `__proto__` of a given object.
+    /// (don't confuse this with `self.prototype()`!)
     ///
     /// The proto is another object used to resolve methods across a class of
     /// multiple objects. It should also be accessible as `__proto__` from
@@ -653,6 +661,13 @@ impl<'gc> Object<'gc> {
         }
 
         self.get_data(istr!("__proto__"), activation)
+    }
+
+    /// Retrieve the `prototype` of this object, as if it was a function.
+    /// (don't confuse this with `self.proto()`!)
+    pub fn prototype(self, activation: &mut Activation<'_, 'gc>) -> Value<'gc> {
+        // Ignore getters, __proto__, and SWF version attributes.
+        self.get_data(istr!("prototype"), activation)
     }
 
     /// Checks if the object has a given named property.

@@ -85,8 +85,7 @@ impl<'gc> SuperObject<'gc> {
         };
 
         let constructor = istr!("__constructor__");
-        let Some((Value::Object(constructor), _depth)) =
-            search_prototype(proto.into(), constructor, activation, proto, false)?
+        let Some(Value::Object(constructor)) = proto.get_opt(constructor, activation, false)?
         else {
             return Ok(Value::Undefined);
         };
@@ -113,9 +112,11 @@ impl<'gc> SuperObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         reason: ExecutionReason,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        let this = self.this();
+        // 'special' method calls appear to skip the `__resolve` fallback logic
+        let call_resolve_fn = !matches!(reason, ExecutionReason::Special);
+        let (this, proto) = (self.this(), self.proto(activation));
         let Some((Value::Object(method), depth)) =
-            search_prototype(self.proto(activation), name, activation, this, true)?
+            search_prototype(proto, name, activation, this, call_resolve_fn)?
         else {
             return Ok(Value::Undefined);
         };

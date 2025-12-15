@@ -10,14 +10,14 @@ use crate::string::AvmString;
 use ruffle_macros::istr;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "toString" => method(to_string);
-    "clone" => method(clone);
-    "equals" => method(equals);
-    "add" => method(add);
-    "subtract" => method(subtract);
-    "normalize" => method(normalize);
-    "offset" => method(offset);
     "length" => property(length; READ_ONLY);
+    "clone" => method(clone);
+    "offset" => method(offset);
+    "equals" => method(equals);
+    "subtract" => method(subtract);
+    "add" => method(add);
+    "normalize" => method(normalize);
+    "toString" => method(to_string);
 };
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
@@ -58,11 +58,11 @@ pub fn value_to_point<'gc>(
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<(f64, f64), Error<'gc>> {
     let x = value
-        .coerce_to_object(activation)
+        .coerce_to_object_or_bare(activation)?
         .get(istr!("x"), activation)?
         .coerce_to_f64(activation)?;
     let y = value
-        .coerce_to_object(activation)
+        .coerce_to_object_or_bare(activation)?
         .get(istr!("y"), activation)?
         .coerce_to_f64(activation)?;
     Ok((x, y))
@@ -87,17 +87,17 @@ fn constructor<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if args.is_empty() {
-        this.set(istr!("x"), 0.into(), activation)?;
         this.set(istr!("y"), 0.into(), activation)?;
+        this.set(istr!("x"), 0.into(), activation)?;
     } else {
-        this.set(
-            istr!("x"),
-            args.get(0).unwrap_or(&Value::Undefined).to_owned(),
-            activation,
-        )?;
         this.set(
             istr!("y"),
             args.get(1).unwrap_or(&Value::Undefined).to_owned(),
+            activation,
+        )?;
+        this.set(
+            istr!("x"),
+            args.get(0).unwrap_or(&Value::Undefined).to_owned(),
             activation,
         )?;
     }
@@ -128,7 +128,7 @@ fn equals<'gc>(
     if let Some(other) = args.get(0) {
         let this_x = this.get(istr!("x"), activation)?;
         let this_y = this.get(istr!("y"), activation)?;
-        let other = other.coerce_to_object(activation);
+        let other = other.coerce_to_object_or_bare(activation)?;
         let other_x = other.get(istr!("x"), activation)?;
         let other_y = other.get(istr!("y"), activation)?;
         return Ok((this_x == other_x && this_y == other_y).into());
@@ -187,7 +187,7 @@ fn distance<'gc>(
     let a = args
         .get(0)
         .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation);
+        .coerce_to_object_or_bare(activation)?;
     let b = args.get(1).unwrap_or(&Value::Undefined);
     let delta = a.call_method(
         istr!("subtract"),
@@ -196,7 +196,7 @@ fn distance<'gc>(
         ExecutionReason::FunctionCall,
     )?;
     delta
-        .coerce_to_object(activation)
+        .coerce_to_object_or_bare(activation)?
         .get(istr!("length"), activation)
 }
 

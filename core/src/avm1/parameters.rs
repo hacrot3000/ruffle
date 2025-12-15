@@ -22,26 +22,25 @@ pub trait ParametersExt<'gc> {
 
     /// Gets the value at the given index as an Object.
     /// The value will be coerced to an Object, even if it's undefined/missing.
-    fn get_object(&self, activation: &mut Activation<'_, 'gc>, index: usize) -> Object<'gc> {
-        self.get_value(index).coerce_to_object(activation)
+    fn get_object(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        index: usize,
+    ) -> Result<Object<'gc>, Error<'gc>> {
+        self.get_value(index).coerce_to_object_or_bare(activation)
     }
 
     /// Tries to get the value at the given index as an Object.
-    /// The value will be coerced to an Object if it exists.
-    #[expect(dead_code)]
+    /// The value will be coerced to an Object if it exists and is coercible.
     fn try_get_object(
         &self,
         activation: &mut Activation<'_, 'gc>,
         index: usize,
-        undefined_behaviour: UndefinedAs,
-    ) -> Option<Object<'gc>> {
+    ) -> Result<Option<Object<'gc>>, Error<'gc>> {
         if let Some(value) = self.get_optional(index) {
-            if undefined_behaviour == UndefinedAs::None && value == Value::Undefined {
-                return None;
-            }
-            Some(value.coerce_to_object(activation))
+            value.coerce_to_object(activation)
         } else {
-            None
+            Ok(None)
         }
     }
 

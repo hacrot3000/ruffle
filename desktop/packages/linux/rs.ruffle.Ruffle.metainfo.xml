@@ -5,13 +5,16 @@
     <project_license>MIT OR Apache-2.0</project_license>
     <name>Ruffle</name>
     <name xml:lang="ar">رَفل</name>
+    <name xml:lang="bs">Ruffle</name>
     <name xml:lang="cs">Ruffle</name>
     <name xml:lang="de">Ruffle</name>
     <name xml:lang="es">Ruffle</name>
     <name xml:lang="fi">Ruffle</name>
     <name xml:lang="fr">Ruffle</name>
     <name xml:lang="he">Ruffle</name>
+    <name xml:lang="hr">Ruffle</name>
     <name xml:lang="hu">Ruffle</name>
+    <name xml:lang="it">Ruffle</name>
     <name xml:lang="ja">Ruffle</name>
     <name xml:lang="ko">Ruffle</name>
     <name xml:lang="nl">Ruffle</name>
@@ -21,6 +24,7 @@
     <name xml:lang="ro">Ruffle</name>
     <name xml:lang="ru">Ruffle</name>
     <name xml:lang="sk">Ruffle</name>
+    <name xml:lang="sr">Ruffle</name>
     <name xml:lang="sv">Ruffle</name>
     <name xml:lang="th">Ruffle</name>
     <name xml:lang="tr">Ruffle</name>
@@ -31,12 +35,15 @@
     <name xml:lang="zh-TW">Ruffle</name>
     <summary>Play Flash games &amp; movies</summary>
     <summary xml:lang="ar">شغِّل ألعاب الفلاش وأفلامه</summary>
+    <summary xml:lang="bs">Igrajte Flash igre i filmove</summary>
     <summary xml:lang="cs">Hrajte Flash hry a přehrajte filmy</summary>
     <summary xml:lang="es">Jugar juegos y ver películas de Flash</summary>
     <summary xml:lang="fi">Toista Flash-pelejä ja -elokuvia</summary>
     <summary xml:lang="fr">Jouez à des jeux et regardez des animations en Flash</summary>
     <summary xml:lang="he">הפעילו משחקי וסרטוני פלאש</summary>
+    <summary xml:lang="hr">Igrajte Flash igre i filmove</summary>
     <summary xml:lang="hu">Lejátszó Flash animációkhoz és játékokhoz</summary>
+    <summary xml:lang="it">Gioca e guarda i contenuti fatto in Flash</summary>
     <summary xml:lang="ja">Flashゲームと動画を再生します</summary>
     <summary xml:lang="ko">플래시 게임 &amp; 영상 실행</summary>
     <summary xml:lang="nl">Speel Flash spellen &amp; animaties</summary>
@@ -46,6 +53,7 @@
     <summary xml:lang="ro">Joacă jocuri și redă filme Flash</summary>
     <summary xml:lang="ru">Проигрывайте Flash-игры и ролики</summary>
     <summary xml:lang="sk">Hrajte Flash hry a prehrajte filmy</summary>
+    <summary xml:lang="sr">Igrajte fleš igre i filmove</summary>
     <summary xml:lang="sv">Spela Flashspel &amp; filmer</summary>
     <summary xml:lang="th">เล่นเกม Flash และสื่อ</summary>
     <summary xml:lang="tr">Flash oyunları &amp; filmleri oynat</summary>
@@ -56,13 +64,16 @@
     <developer id="rs.ruffle">
         <name>The Ruffle Team</name>
         <name xml:lang="ar">فريق رَفل</name>
+        <name xml:lang="bs">Ruffle Tim</name>
         <name xml:lang="cs">Ruffle Tým</name>
         <name xml:lang="de">Das Ruffle-Team</name>
         <name xml:lang="es">El equipo de Ruffle</name>
         <name xml:lang="fi">Ruffle-tiimi</name>
         <name xml:lang="fr">L'équipe de Ruffle</name>
         <name xml:lang="he">צוות Ruffle</name>
+        <name xml:lang="hr">Tim Ruffle</name>
         <name xml:lang="hu">A Ruffle csapata</name>
+        <name xml:lang="it">Il Team Ruffle</name>
         <name xml:lang="ja">Ruffleチーム</name>
         <name xml:lang="ko">Ruffle 팀</name>
         <name xml:lang="nl">Het Ruffle Team</name>
@@ -72,6 +83,7 @@
         <name xml:lang="ro">Echipa Ruffle</name>
         <name xml:lang="ru">Команда Ruffle</name>
         <name xml:lang="sk">Ruffle Tím</name>
+        <name xml:lang="sr">Ruffle Tim</name>
         <name xml:lang="sv">Ruffle Teamet</name>
         <name xml:lang="th">ทีมงาน Ruffle</name>
         <name xml:lang="tr">Ruffle ekibi</name>
@@ -91,12 +103,14 @@
             Ruffle puts Flash back on the web, where it belongs!
         </p>
         <p xml:lang="ar">رَفل هو مشغل فلاش مكتوب في رَسْت. للإستفادة من ضمانات السلامة في رَسْت، يمكننا أن نتجنب جميع المشاكل الأمنية التي اشتهر بها الفلاش بكل ثقة. يضع رَفل الفلاش مرة أخرى، حيث تنتمي!</p>
+        <p xml:lang="bs">Ruffle je emulator Flash Playera napisan u Rustu. Iskorištavanjem Rustovih sigurnosnih garancija, možemo s pouzdanjem izbjeći sve sigurnosne zamke po kojima je Flash bio poznat. Ruffle vraća Flash na web, gdje mu je i mjesto!</p>
         <p xml:lang="cs">Ruffle je emulátor Flash Player napsaný v Rustu. Využitím bezpečnostních záruk Rustu se můžeme s jistotou vyhnout všem bezpečnostním nástrahám, kterými byl Flash pověstný. Ruffle vrací Flash zpět na web, kam patří!</p>
         <p xml:lang="de">Ruffle ist ein in Rust geschriebener Flash Player-Emulator. Durch die Nutzung der Sicherheitsgarantien von Rust können wir alle Sicherheitslücken vermeiden, für die Flash bekannt war. Ruffle bringt Flash zurück ins Web, wo es hingehört!</p>
         <p xml:lang="es">Ruffle es un emulador de Flash Player escrito en Rust. Se aprovecha la seguridad de Rust para que podemos eludir con confianza todos los problemas potenciales que estaban asociados con Flash anteriormente. ¡Ruffle devuelve Flash a la red mundial donde se debe estar!</p>
         <p xml:lang="fi">Ruffle on Flash Player -emulaattori Rust-ohjelmointikielellä toteutettuna. Rustin turvallisuustakuita hyödyntäen voimme varmuudella välttää tietoturvakömmähdykset, joista Flash oli surullisenkuuluisa. Ruffle laittaa Flashin takaisin sinne minne se kuuluukin – verkkoon!</p>
         <p xml:lang="fr">Ruffle est un émulateur pour Flash Player écrit en Rust. En tirant parti des garanties de sécurité offertes par Rust, nous pouvons éviter tous les problèmes de sécurité pour lesquels Flash était réputé. Ruffle remet Flash à sa juste place, sur Internet !</p>
         <p xml:lang="he">Ruffle הוא אמולטור של נגן פלאש שפותח באמצעות Rust. בזכות המוניטין הטוב אודות הבטיחות של Rust נוכל להימנע מכל מלכודות האבטחה שלפלאש היו. Ruffle מחזיר את פלאש לאינטרנט, בדיוק לאיפה שהוא שייך!</p>
+        <p xml:lang="hr">Ruffle je emulator Flash Playera napisan u Rustu. Iskorištavanjem Rustovih sigurnosnih jamstava, možemo s pouzdanjem izbjeći sve sigurnosne zamke po kojima je Flash bio poznat. Ruffle vraća Flash na web, gdje mu je i mjesto!</p>
         <p xml:lang="hu">A Ruffle egy Rust nyelven írt Flash Player emulátor. A Rust biztonsági garanciáit kihasználva magabiztosan elkerülhetjük az összes biztonsági rést, amelyről a Flash híres volt. A Ruffle visszateszi a Flasht a webre, ahová való!</p>
         <p xml:lang="ja">RuffleはRustで書かれたFlash Playerエミュレーターです。Rustの安全性を活用し、Flashに存在した様々な脆弱性を確実に回避します。RuffleでFlashをwebに取り戻しましょう!</p>
         <p xml:lang="ko">Ruffle은 Rust로 작성된 플래시 플레이어 에뮬레이터입니다. Rust의 안전성 보장을 통해 플래시의 악명 높은 보안 결점을 모두 회피할 수 있습니다. Ruffle은 플래시를 웹 본연의 자리로 돌려놓습니다!</p>
@@ -107,8 +121,10 @@
         <p xml:lang="ro">Ruffle este un emulator Flash Player scris în Rust. Profitând de garanțiile de siguranță oferite de Rust, putem evita cu încredere toate problemele de securitate avute de Flash. Ruffle readuce Flash pe web, acolo unde îi este locul!</p>
         <p xml:lang="ru">Ruffle — это эмулятор Flash Player'а, написанный на Rust. Опираясь на гарантии безопасности Rust, мы можем с уверенностью избежать всех проблем с безопасностью, которыми был известен Flash. Ruffle возвращает Flash в Сеть на своё прежнее место!</p>
         <p xml:lang="sk">Ruffle je emulátor Flash Player napísaný v Ruste. Využitím bezpečnostných záruk Rustu sa môžeme s istotou vyhnúť všetkým bezpečnostným nástrahám, ktorými bol Flash povestný. Ruffle vracia Flash späť na web, kam patrí!</p>
+        <p xml:lang="sr">Ruffle je emulator Fleš plejera napisan u Rustu. Korišćenjem Rustovih bezbednosnih garancija, možemo sa sigurnošću izbeći sve bezbednosne zamke po kojima je Fleš bio poznat. Ruffle vraća Fleš na veb, gde mu je i mesto!</p>
         <p xml:lang="th">Ruffle เป็นโปรแกรมเลียนแบบ Flash Player เขียนด้วยภาษา Rust ซึ่งรับรองความปลอดภัย เราจึงมั่นใจได้ว่าจะหลีกเลี่ยงปัญหาความปลอดภัยทั้งหมดที่ Flash เคยมี Ruffle นำสื่อ Flash กลับมาอยู่บนเว็บ ซึ่งเป็นที่ที่ควรอยู่!</p>
         <p xml:lang="tr">Ruffle, Rust ile yazılmış bir Flash Player emülatörüdür. Rust'ın güvenlik garantilerinden yararlanarak, Flash'ın ünlü olduğu tüm güvenlik açıklarından güvenle kaçınabiliyoruz. Ruffle, Flash'ı ait olduğu yere, web'e geri getiriyor!</p>
+        <p xml:lang="tt">Ruffle ул Rust телендә язылган Flash Player эмуляторы. Rust теленең куркынычсызлык гарантияләренә таянып, без Flash белән бәйле булган барлык рисклардан ышанычлы рәвештә кача алабыз. Ruffle Flash’ның интернеттагы үз урынына кире кайтара!</p>
         <p xml:lang="uk">Ruffle це емулятор Flash Player, написаний на Rust. Використовуючи гарантії безпеки Rust, ми можемо впевнено уникнути всі підводні камені безпеки, якими славиться Flash. Ruffle повертає Flash в інтернет, де йому й місце!</p>
         <p xml:lang="vi">Ruffle là trình giả lập Flash Player viết bằng ngôn ngữ Rust. Tận dụng lợi thế về tính đảm bảo an toàn của Rust, chúng ta có thể tự tin tránh khỏi mọi vấn đề bảo mật mà Flash từng chịu tiếng xấu. Ruffle đưa Flash trở lại thế giới web, nơi nó vốn thuộc về!</p>
         <p xml:lang="zh-CN">Ruffle 是一个用 Rust 编写的 Flash Player 模拟器，借助 Rust 的安全性保证，我们确信可以避免 Flash 众所周知的各种安全漏洞。Ruffle 将 Flash 重新带回网络，它原本所在的地方！</p>
@@ -118,23 +134,27 @@
             and take full advantage of your GPU and system resources to get those extra frames when playing intense games.
         </p>
         <p xml:lang="ar">يتيح لك هذا التطبيق تشغيل محتوى الفلاش على جهازك الحاسوب دون الحاجة إلى متصفح بينها، والاستفادة الكاملة من وحدة معالجة الرسومات وموارد النظام للحصول على إطارات إضافية عند لعب الألعاب المكثفة.</p>
+        <p xml:lang="bs">Ova aplikacija vam omogućava pokretanje Flash sadržaja na računaru bez pretraživača i maksimiziranje resursa vaše grafičke kartice i sistema kako biste dobili dodatne frejmove prilikom igranja zahtjevnih igara.</p>
         <p xml:lang="cs">Tato aplikace vám umožňuje spouštět obsah Flash na vašem počítači bez použití prohlížeče a plně využívat vaše GPU a systémové prostředky k získání snímků navíc při hraní intenzivních her.</p>
         <p xml:lang="de">Diese Anwendung ermöglicht es Ihnen Flash-Inhalte auf Ihrem Computer ausführen, ohne dass ein Browser vonnöten ist. Dadurch können Sie die volle Leistung Ihrer GPU und Systemressourcen nutzen, um zusätzliche Bilder bei anspruchsvollen Spielen zu erhalten.</p>
         <p xml:lang="es">Este programa te permite ejecutar contenido de Flash por tu computadora sin un navegador de web en el medio. Aprovecha completamente tu procesador de gráficos y los recursos del sistema para obtener el mejor rendimiento posible con juegos exigentes.</p>
         <p xml:lang="fi">Tämä sovellus mahdollistaa Flash-sisällön toistamisen tietokoneellasi ilman selainta, ja se hyödyntää näytönohjaimen sekä järjestelmän resursseja sulavan kokemuksen tarjoamiseksi.</p>
         <p xml:lang="fr">Cette application vous permet d'exécuter du contenu Flash sur votre ordinateur sans passer par un navigateur. Elle tire également pleinement parti de votre GPU et des ressources système pour garantir des performances élevées, même pour les jeux exigeants.</p>
         <p xml:lang="he">יישום זה מאפשר לך להריץ תכני פלאש במחשב שלך בלי איזה דפדפן חיצוני בין הדרך, ולנצל את מלוא היתרונות של משאבי כרטיס המסך והמערכת שלך כדי לקבל את הפריימים הנוספים האלה במשחקים אינטנסיביים.</p>
+        <p xml:lang="hr">Ova aplikacija vam omogućuje pokretanje Flash sadržaja na računalu bez preglednika i maksimalno iskorištavanje resursa vaše grafičke kartice i sustava kako biste dobili dodatne sličice prilikom igranja zahtjevnih igara.</p>
         <p xml:lang="hu">Ez az alkalmazás lehetővé teszi Flash tartalmak futtatását a számítógépeden egy köztes böngésző nélkül, így teljes mértékben kihasználhatja a GPU-t és a rendszer erőforrásait, extra képkockákat biztosítva intenzív játékokban.</p>
         <p xml:lang="ja">このアプリケーションを使用すると、ブラウザを介さずともコンピュータ上でFlashコンテンツを実行することができます。GPUなどのシステムリソースを最大限に活用し、負荷の高いゲームでも快適にプレイすることができます。</p>
         <p xml:lang="ko">이 애플리케이션을 사용하면 브라우저 없이 컴퓨터에서 플래시 콘텐츠를 실행할 수 있으며, 격렬한 게임을 플레이할 때 GPU와 시스템 리소스를 최대한 활용하여 추가 프레임을 확보할 수 있습니다.</p>
         <p xml:lang="nl">Deze applicatie staat je toe om Flash-inhoud te spelen op je computer zonder een webbrowser ertussen, waardoor je volledig gebruik kan maken van je videokaart en rekenkracht om net dat beetje extra te krijgen als je intense spellen speelt.</p>
         <p xml:lang="pl">Ta aplikacja umożliwia uruchamianie zawartości Flash bezpośrednio na komputerze, bez konieczności używania przeglądarki, a także pełne wykorzystanie procesora graficznego i zasobów systemu, co pozwala uzyskać dodatkowe klatki podczas grania w wymagające gry.</p>
-        <p xml:lang="pt-BR">Essa aplicação permite reproduzir conteúdo Flash no seu computador sem necessidade de um navegador, e usar toda a capacidade da sua GPU e recursos do sistema para ter aqueles fps extra ao jogar jogos intensos.</p>
+        <p xml:lang="pt-BR">Este programa permite executar conteúdo em Flash no seu computador sem precisar de um navegador no meio do processo, aproveitando totalmente a placa gráfica e os recursos do sistema para obter mais desempenho ao jogar títulos mais pesados.</p>
         <p xml:lang="pt-PT">Esta aplicação permite-lhe executar conteúdos Flash no computador sem um navegador pelo meio e tirar o máximo partido dos recursos da GPU e do sistema para obter aqueles frames extra numa sessão de jogo intensa.</p>
         <p xml:lang="ro">Această aplicație vă permite să rulați conținut Flash la calculator fără a avea nevoie de browser, și să profitați la maximum de resursele GPU și de sistem pentru a obține acele cadre suplimentare atunci când jucați jocuri intense.</p>
         <p xml:lang="ru">Это приложение позволяет запускать Flash-контент на вашем компьютере без использования браузера и в полной мере использовать ресурсы графического процессора и системы для получения дополнительных кадров при игре в требовательные игры.</p>
         <p xml:lang="sk">Táto aplikácia vám umožňuje spúšťať obsah Flash na vašom počítači bez použitia prehliadača a plne využívať vaše GPU a systémové prostriedky na získanie snímok navyše pri hraní intenzívnych hier.</p>
+        <p xml:lang="sr">Ova aplikacija vam omogućava da pokrećete Fleš sadržaj na računaru bez pregledača i maksimizirate resurse grafičke kartice i sistema kako biste dobili dodatne frejmove prilikom igranja zahtevnih igara.</p>
         <p xml:lang="tr">Bu uygulama, bilgisayarınızda tarayıcıya ihtiyaç duymadan Flash içerik çalıştırmanıza ve yoğun oyunlar oynarken ekstra kare hızları elde etmek için GPU'nuzu ve sistem kaynaklarınızı tam anlamıyla kullanmanıza olanak tanır.</p>
+        <p xml:lang="tt">Бу кушымта браузер кулланмыйча ук компьютерда Flash-контент эшләтеп җибәрергә мөмкинлек бирә, ә көчле уеннар уйнаганда өстәмә кадрлар алу өчен видеокарта белән система ресурсларын тулысынча файдаланырга ярдәм итә.</p>
         <p xml:lang="uk">Цей застосунок дає змогу запускати Flash контент на вашому комп’ютері без проміжного браузера та повністю використовувати переваги вашого GPU та системних ресурсів, щоб отримати додаткові кадри під час відтворення інтенсивних ігор.</p>
         <p xml:lang="vi">Ứng dụng này cho phép bạn chạy nội dung Flash trên máy tính mà không cần trình duyệt trung gian, và tận dụng tối đa tài nguyên GPU và hệ thống để tăng thêm tốc độ khung hình khi chơi các tựa game nặng.</p>
         <p xml:lang="zh-CN">这款应用程序让您可以在电脑上直接运行 Flash 内容，无需浏览器作为中介，并充分利用您的 GPU 和系统资源，在游玩高负载游戏时获得更高的帧数。</p>
@@ -189,6 +209,7 @@
         <keyword xml:lang="fi">flash</keyword>
         <keyword xml:lang="fr">flash</keyword>
         <keyword xml:lang="he">פלאש</keyword>
+        <keyword xml:lang="hr">flash</keyword>
         <keyword xml:lang="hu">flash</keyword>
         <keyword xml:lang="it">flash</keyword>
         <keyword xml:lang="ja">flash</keyword>
@@ -210,12 +231,14 @@
         <keyword xml:lang="zh-TW">flash</keyword>
         <keyword>swf</keyword>
         <keyword xml:lang="ar">swf</keyword>
+        <keyword xml:lang="bs">swf</keyword>
         <keyword xml:lang="cs">swf</keyword>
         <keyword xml:lang="de">swf</keyword>
         <keyword xml:lang="es">swf</keyword>
         <keyword xml:lang="fi">swf</keyword>
         <keyword xml:lang="fr">swf</keyword>
         <keyword xml:lang="he">swf</keyword>
+        <keyword xml:lang="hr">swf</keyword>
         <keyword xml:lang="hu">swf</keyword>
         <keyword xml:lang="it">swf</keyword>
         <keyword xml:lang="ja">swf</keyword>
@@ -227,6 +250,7 @@
         <keyword xml:lang="ro">swf</keyword>
         <keyword xml:lang="ru">swf</keyword>
         <keyword xml:lang="sk">swf</keyword>
+        <keyword xml:lang="sr">swf</keyword>
         <keyword xml:lang="sv">swf</keyword>
         <keyword xml:lang="th">swf</keyword>
         <keyword xml:lang="tr">swf</keyword>
@@ -237,12 +261,14 @@
         <keyword xml:lang="zh-TW">swf</keyword>
         <keyword>player</keyword>
         <keyword xml:lang="ar">مشغل</keyword>
+        <keyword xml:lang="bs">igrač</keyword>
         <keyword xml:lang="cs">přehrávač</keyword>
         <keyword xml:lang="de">Spieler</keyword>
         <keyword xml:lang="es">reproductor</keyword>
         <keyword xml:lang="fi">toistin</keyword>
         <keyword xml:lang="fr">lecteur</keyword>
         <keyword xml:lang="he">נגן</keyword>
+        <keyword xml:lang="hr">igrač</keyword>
         <keyword xml:lang="hu">lejátszó</keyword>
         <keyword xml:lang="id">pemutar</keyword>
         <keyword xml:lang="it">riproduttore</keyword>
@@ -255,6 +281,7 @@
         <keyword xml:lang="ro">reproducător</keyword>
         <keyword xml:lang="ru">прои́грыватель</keyword>
         <keyword xml:lang="sk">prehrávač</keyword>
+        <keyword xml:lang="sr">igrač</keyword>
         <keyword xml:lang="sv">player</keyword>
         <keyword xml:lang="tr">oynatıcı</keyword>
         <keyword xml:lang="tt">плеер</keyword>
@@ -264,12 +291,14 @@
         <keyword xml:lang="zh-TW">播放器</keyword>
         <keyword>emulator</keyword>
         <keyword xml:lang="ar">محاكي</keyword>
+        <keyword xml:lang="bs">emulator</keyword>
         <keyword xml:lang="cs">emulátor</keyword>
         <keyword xml:lang="de">Emulator</keyword>
         <keyword xml:lang="es">emulador</keyword>
         <keyword xml:lang="fi">emulaattori</keyword>
         <keyword xml:lang="fr">émulateur</keyword>
         <keyword xml:lang="he">אמולטור</keyword>
+        <keyword xml:lang="hr">emulator</keyword>
         <keyword xml:lang="hu">emulátor</keyword>
         <keyword xml:lang="it">emulatore</keyword>
         <keyword xml:lang="ja">エミュレーター</keyword>
@@ -281,6 +310,7 @@
         <keyword xml:lang="ro">emulator</keyword>
         <keyword xml:lang="ru">эмуля́тор</keyword>
         <keyword xml:lang="sk">emulátor</keyword>
+        <keyword xml:lang="sr">emulator</keyword>
         <keyword xml:lang="sv">emulator</keyword>
         <keyword xml:lang="th">โปรแกรมเลียนแบบ</keyword>
         <keyword xml:lang="tr">öykünücü</keyword>

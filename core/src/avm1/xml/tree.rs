@@ -359,10 +359,8 @@ impl<'gc> XmlNode<'gc> {
             Some(object) => object,
             None => {
                 let xml_node = activation.prototypes().xml_node_constructor;
-                let prototype = xml_node
-                    .get(istr!("prototype"), activation)
-                    .map(|p| p.coerce_to_object(activation))
-                    .ok();
+                // TODO(moulins): should this use `Object::prototype`?
+                let prototype = xml_node.get(istr!("prototype"), activation).ok();
                 let object = Object::new(&activation.context.strings, prototype);
                 self.introduce_script_object(activation.gc(), object);
                 object.set_native(activation.gc(), NativeObject::XmlNode(self));
