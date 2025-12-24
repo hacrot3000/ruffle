@@ -1,8 +1,9 @@
+use enumset::EnumSet;
 use std::borrow::Cow;
-use std::collections::HashSet;
+use url::ParseError as UrlParseError;
 use url::Url;
 
-use crate::backend::navigator::FetchReason;
+use crate::backend::navigator::{ErrorResponse, FetchReason};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum UrlRewriteStage {
@@ -19,7 +20,7 @@ pub enum UrlRewriteStage {
 #[derive(Debug, Clone)]
 pub struct UrlRewriteRule {
     pub stage: UrlRewriteStage,
-    pub fetch_reasons: HashSet<FetchReason>,
+    pub fetch_reasons: EnumSet<FetchReason>,
     pub host: String,
     pub replacement: String,
 }
@@ -27,15 +28,30 @@ pub struct UrlRewriteRule {
 impl UrlRewriteRule {
     pub fn new(
         stage: UrlRewriteStage,
-        fetch_reasons: Vec<FetchReason>,
+        fetch_reasons: EnumSet<FetchReason>,
         host: impl ToString,
         replacement: impl ToString,
     ) -> Self {
         Self {
             stage,
-            fetch_reasons: fetch_reasons.into_iter().collect(),
+            fetch_reasons,
             host: host.to_string(),
             replacement: replacement.to_string(),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct UrlBlockRule {
+    pub fetch_reasons: EnumSet<FetchReason>,
+    pub host: String,
+}
+
+impl UrlBlockRule {
+    pub fn new(fetch_reasons: EnumSet<FetchReason>, host: impl ToString) -> Self {
+        Self {
+            fetch_reasons,
+            host: host.to_string(),
         }
     }
 }
@@ -44,6 +60,7 @@ impl UrlRewriteRule {
 pub struct RuleSet {
     name: String,
     domain_rewrite_rules: Vec<UrlRewriteRule>,
+    domain_block_rules: Vec<UrlBlockRule>,
 }
 
 #[derive(Debug, Clone)]
@@ -80,10 +97,11 @@ impl CompatibilityRules {
                     name: "kongregate_sitelock".to_string(),
                     domain_rewrite_rules: vec![UrlRewriteRule::new(
                         UrlRewriteStage::AfterResponse,
-                        vec![FetchReason::LoadSwf],
+                        EnumSet::only(FetchReason::LoadSwf),
                         "*.konggames.com",
                         "chat.kongregate.com",
                     )],
+                    domain_block_rules: vec![],
                 },
                 // Replaces fpdownload.adobe.com with Ruffle's CDN. fpdownload.adobe.com hosts SWZ files
                 // which do not work on web due to CORS (and the reliability of fpdownload.adobe.com is
@@ -92,33 +110,47 @@ impl CompatibilityRules {
                     name: "fpdownload".to_string(),
                     domain_rewrite_rules: vec![UrlRewriteRule::new(
                         UrlRewriteStage::BeforeRequest,
-                        vec![FetchReason::UrlLoader],
+                        EnumSet::only(FetchReason::UrlLoader),
                         "fpdownload.adobe.com",
                         "cdn.ruffle.rs",
                     )],
+                    domain_block_rules: vec![],
+                },
+                // Mochiads currently don't work and the moachiads.com domain is up for sale.
+                // There are real concerns that a malicious party could buy it.
+                RuleSet {
+                    name: "mochiads".to_string(),
+                    domain_rewrite_rules: vec![],
+                    domain_block_rules: vec![UrlBlockRule::new(EnumSet::all(), "*.mochiads.com")],
                 },
             ],
         }
     }
 
-    pub fn rewrite_swf_url(
+    pub fn block_or_rewrite_swf_url(
         &self,
         original_url: Cow<'_, str>,
         stage: UrlRewriteStage,
         fetch_reason: FetchReason,
-    ) -> Option<String> {
+    ) -> Result<Option<String>, ErrorResponse> {
         let mut url = match Url::parse(&original_url) {
             Ok(url) => url,
+            Err(UrlParseError::RelativeUrlWithoutBase) => {
+                // This is an "expected" error that happens when a SWF provides
+                // a relative path instead of an absolute URL. Avoid logging a
+                // warning when we hit this case.
+                return Ok(None);
+            }
             Err(e) => {
                 tracing::warn!("Couldn't rewrite swf url {original_url}: {e}");
-                return None;
+                return Ok(None);
             }
         };
         let mut rewritten = false;
 
         for rule_set in &self.rule_sets {
             for rule in &rule_set.domain_rewrite_rules {
-                if rule.stage != stage || !rule.fetch_reasons.contains(&fetch_reason) {
+                if rule.stage != stage || !rule.fetch_reasons.contains(fetch_reason) {
                     continue;
                 }
 
@@ -139,12 +171,34 @@ impl CompatibilityRules {
                     }
                 }
             }
+
+            if stage == UrlRewriteStage::BeforeRequest {
+                for rule in &rule_set.domain_block_rules {
+                    if !rule.fetch_reasons.contains(fetch_reason) {
+                        continue;
+                    }
+
+                    if let Some(host) = url.host_str() {
+                        if domain_matches(&rule.host, host) {
+                            tracing::info!(
+                                "Blocking url due to compatibility ruleset '{}'",
+                                rule_set.name
+                            );
+
+                            return Err(ErrorResponse {
+                                url: original_url.to_string(),
+                                error: crate::loader::Error::BlockedHost(rule.host.clone()),
+                            });
+                        }
+                    }
+                }
+            }
         }
 
         if rewritten {
-            Some(url.to_string())
+            Ok(Some(url.to_string()))
         } else {
-            None
+            Ok(None)
         }
     }
 }
@@ -183,6 +237,7 @@ mod tests {
     #[test]
     fn test_domain_matches() {
         assert!(domain_matches("foo.example.com", "foo.example.com"));
+        assert!(domain_matches("*.example.com", "example.com"));
         assert!(domain_matches("*.example.com", "foo.example.com"));
         assert!(domain_matches("*.foo.example.com", "foo.example.com"));
         assert!(domain_matches("*.com", "foo.example.com"));

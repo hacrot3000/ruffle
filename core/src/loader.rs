@@ -177,6 +177,9 @@ pub enum Error {
     #[error("Domain resolution failure: {0}")]
     InvalidDomain(String),
 
+    #[error("Blocked host: {0}")]
+    BlockedHost(String),
+
     #[error("Invalid SWF: {0}")]
     InvalidSwf(#[from] swf::error::Error),
 
@@ -685,7 +688,7 @@ impl<'gc> MovieLoader<'gc> {
                 Ok((body, url, _status, _redirected)) if replacing_root_movie => {
                     ContentType::sniff(&body).expect(ContentType::Swf)?;
 
-                    let movie = SwfMovie::from_data(&body, url.to_string(), loader_url)?;
+                    let movie = SwfMovie::from_data(&body, url, loader_url)?;
                     player.lock().unwrap().mutate_with_update_context(|uc| {
                         // Make a copy of the properties on the root, so we can put them back after replacing it
                         let mut root_properties: IndexMap<AvmString, Value> = IndexMap::new();
@@ -1336,9 +1339,7 @@ pub fn load_sound_avm2<'gc>(
             match response {
                 Ok((body, _, _, _)) => {
                     let handle = uc.audio.register_mp3(&body)?;
-                    if let Err(e) = sound.set_sound(uc, handle) {
-                        tracing::error!("Encountered AVM2 error when setting sound: {}", e);
-                    }
+                    sound.set_sound(uc, handle);
 
                     let total_len = body.len();
 
@@ -1651,10 +1652,7 @@ impl<'gc> MovieLoader<'gc> {
             ContentType::Gif | ContentType::Jpeg | ContentType::Png => {
                 let mut activation = Avm2Activation::from_nothing(uc);
 
-                let library = activation
-                    .context
-                    .library
-                    .library_for_movie_mut(movie.clone());
+                let library = activation.context.library.library_for_movie_mut(movie);
 
                 library.set_avm2_domain(domain);
 
@@ -1749,7 +1747,7 @@ impl<'gc> MovieLoader<'gc> {
                     MovieLoaderVMData::Avm1 { .. } => {
                         // If the file is no valid supported file, the MovieClip enters the error state
                         if let Some(mut mc) = clip.as_movie_clip() {
-                            MovieLoader::load_error_swf(&mut mc, uc, url.clone());
+                            MovieLoader::load_error_swf(&mut mc, uc, url);
                         }
 
                         // AVM1 fires the event with the current and total length as 0
