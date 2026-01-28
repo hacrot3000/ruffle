@@ -1,7 +1,7 @@
 [package]
 name = "ruffle_desktop"
 authors.workspace = true
-edition = "2024"
+edition.workspace = true
 homepage.workspace = true
 license.workspace = true
 repository.workspace = true
@@ -14,10 +14,10 @@ workspace = true
 clap = { workspace = true }
 cpal = { workspace = true }
 egui = { workspace = true }
-egui_extras = { git = "https://github.com/emilk/egui.git", branch = "main", default-features = false, features = ["image"] }
-egui-wgpu = { git = "https://github.com/emilk/egui.git", branch = "main", features = ["winit"] }
+egui_extras = { version = "0.33.3", default-features = false, features = ["image"] }
+egui-wgpu = { version = "0.33.3", features = ["winit"] }
 image = { workspace = true, features = ["png"] }
-egui-winit = { git = "https://github.com/emilk/egui.git", branch = "main" }
+egui-winit = "0.33.3"
 fontdb = "0.23"
 ruffle_core = { path = "../core", features = ["audio", "clap", "mp3", "aac", "nellymoser", "default_compatibility_rules", "egui"] }
 ruffle_render = { path = "../render", features = ["clap"] }
@@ -63,8 +63,18 @@ ashpd = "0.11.0"
 windows-sys = { version = "0.61.2", features = ["Win32_System_Console", "Win32_Storage_FileSystem"] }
 
 [build-dependencies]
-embed-resource = "3"
 vergen = { version = "8.3.2", features = ["build", "git", "gitcl", "cargo"] }
+winresource = "0.1"
+
+[package.metadata.winresource]
+# https://learn.microsoft.com/en-us/windows/win32/menurc/stringfileinfo-block
+ProductName = "Ruffle"
+FileDescription = "Adobe Flash Player emulator"
+CompanyName = "Ruffle LLC"
+LegalCopyright = "Copyright © 2018 Ruffle LLC and Ruffle contributors"
+# InternalName should be the same as the module name
+InternalName = "ruffle_desktop"
+OriginalFilename = "ruffle.exe"
 
 [features]
 default = ["software_video", "external_video", "lzma", "fontconfig"]

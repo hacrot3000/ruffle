@@ -1,5 +1,6 @@
 //! Array class
 
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
 use crate::avm2::error::{make_error_1005, make_error_1125};
@@ -7,7 +8,6 @@ use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::{ArrayObject, Object, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
 use crate::string::AvmString;
 use bitflags::bitflags;
 use ruffle_macros::istr;
@@ -963,9 +963,7 @@ fn sort_postprocess<'gc>(
         if options.contains(SortOptions::RETURN_INDEXED_ARRAY) {
             return Ok(build_array(
                 activation,
-                ArrayStorage::from_storage(
-                    values.iter().map(|(i, _v)| Some((*i).into())).collect(),
-                ),
+                values.iter().map(|&(i, _)| i).collect(),
             ));
         } else {
             if let Some(mut old_array) = this.as_array_storage_mut(activation.gc()) {

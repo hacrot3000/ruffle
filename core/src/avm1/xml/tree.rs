@@ -5,8 +5,8 @@ use crate::avm1::{Activation, ArrayBuilder, Attribute, Error, NativeObject, Obje
 use crate::string::{AvmString, StringContext, WStr, WString};
 use gc_arena::barrier::unlock;
 use gc_arena::{
-    lock::{Lock, RefLock},
     Collect, Gc, Mutation,
+    lock::{Lock, RefLock},
 };
 use quick_xml::escape::escape;
 use quick_xml::events::BytesStart;
@@ -347,7 +347,10 @@ impl<'gc> XmlNode<'gc> {
     /// call this if you need to instantiate the script object for the first
     /// time. Attempting to call it a second time will panic.
     pub fn introduce_script_object(self, gc_context: &Mutation<'gc>, new_object: Object<'gc>) {
-        assert!(self.get_script_object().is_none(), "An attempt was made to change the already-established link between script object and XML node. This has been denied and is likely a bug.");
+        assert!(
+            self.get_script_object().is_none(),
+            "An attempt was made to change the already-established link between script object and XML node. This has been denied and is likely a bug."
+        );
 
         unlock!(Gc::write(gc_context, self.0), XmlNodeData, script_object).set(Some(new_object));
     }

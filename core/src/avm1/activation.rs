@@ -4,7 +4,7 @@ use crate::avm1::function::{Avm1Function, ExecutionReason, FunctionObject};
 use crate::avm1::property::Attribute;
 use crate::avm1::runtime::skip_actions;
 use crate::avm1::scope::{Scope, ScopeClass};
-use crate::avm1::{fscommand, globals, scope, ArrayBuilder, Object, Value};
+use crate::avm1::{ArrayBuilder, Object, Value, fscommand, globals, scope};
 use crate::backend::navigator::{NavigationMethod, Request};
 use crate::context::UpdateContext;
 use crate::display_object::{
@@ -652,10 +652,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let start_clip = self.target_clip_or_root();
         let source_clip = self.resolve_target_display_object(start_clip, source, true)?;
 
-        if let Some(movie_clip) = source_clip.and_then(|o| o.as_movie_clip()) {
-            globals::movie_clip::clone_sprite(movie_clip, self.context, target, depth, None);
-        } else {
-            avm_warn!(self, "CloneSprite: Source is not a movie clip");
+        if let Some(source_clip) = source_clip {
+            globals::movie_clip::clone_sprite(source_clip, self.context, target, depth, None);
         }
 
         Ok(FrameControl::Continue)
@@ -1229,15 +1227,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             let mut is_load_vars = true;
             if !(action.is_target_sprite() || level_target > -1) {
                 is_load_vars = false;
-                if matches!(target_val, Value::Object(_)) {
-                    if let Some(clip) = clip_target {
-                        is_load_vars = DisplayObject::ptr_eq(clip, self.base_clip().avm1_root());
-                    }
-                }
-                if matches!(target_val, Value::MovieClip(_)) {
-                    if let Some(clip) = clip_target {
-                        is_load_vars = DisplayObject::ptr_eq(clip, self.base_clip().avm1_root());
-                    }
+                if matches!(target_val, Value::Object(_) | Value::MovieClip(_))
+                    && let Some(clip) = clip_target
+                {
+                    is_load_vars = DisplayObject::ptr_eq(clip, self.base_clip().avm1_root());
                 }
             }
             if is_load_vars {

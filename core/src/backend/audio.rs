@@ -9,14 +9,14 @@ use crate::{
 };
 use gc_arena::Collect;
 pub use ruffle_common::buffer::Substream;
-use slotmap::{new_key_type, Key, SlotMap};
+use slotmap::{Key, SlotMap, new_key_type};
 
 #[cfg(feature = "audio")]
 pub mod decoders;
 pub mod swf {
     pub use swf::{
-        read, AudioCompression, CharacterId, Sound, SoundEnvelope, SoundEnvelopePoint, SoundEvent,
-        SoundFormat, SoundInfo, SoundStreamHead,
+        AudioCompression, CharacterId, Sound, SoundEnvelope, SoundEnvelopePoint, SoundEvent,
+        SoundFormat, SoundInfo, SoundStreamHead, read,
     };
 }
 
@@ -392,10 +392,10 @@ impl<'gc> AudioManager<'gc> {
                 // Sounds still playing; update position for AVM1 sounds.
                 // AVM2 sounds do not update position and instead grab the position on demand.
 
-                if let Some(object) = sound.avm1_object {
-                    if let NativeObject::Sound(sound) = object.native() {
-                        sound.set_position(pos.round() as u32);
-                    }
+                if let Some(object) = sound.avm1_object
+                    && let NativeObject::Sound(sound) = object.native()
+                {
+                    sound.set_position(pos.round() as u32);
                 }
                 true
             } else {

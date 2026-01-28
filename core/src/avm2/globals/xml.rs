@@ -2,7 +2,7 @@
 
 use ruffle_macros::istr;
 
-use crate::avm2::e4x::{name_to_multiname, E4XNamespace, E4XNode, E4XNodeKind};
+use crate::avm2::e4x::{E4XNamespace, E4XNode, E4XNodeKind, name_to_multiname};
 use crate::avm2::error::{make_error_1088, make_error_1117};
 pub use crate::avm2::object::xml_allocator;
 use crate::avm2::object::{E4XOrXml, QNameObject, TObject, XmlListObject, XmlObject};
@@ -510,10 +510,7 @@ pub fn remove_namespace<'gc>(
 
     // 6. If ns.prefix == undefined
     if ns.prefix.is_none() {
-        let E4XNodeKind::Element {
-            ref mut namespaces, ..
-        } = &mut *node.kind_mut(activation.gc())
-        else {
+        let E4XNodeKind::Element { namespaces, .. } = &mut *node.kind_mut(activation.gc()) else {
             unreachable!()
         };
         // 6.a. If there exists a namespace n ∈ x.[[InScopeNamespaces]],
@@ -521,10 +518,7 @@ pub fn remove_namespace<'gc>(
         namespaces.retain(|namespace| namespace.uri != ns.uri);
     } else {
         // 7. Else
-        let E4XNodeKind::Element {
-            ref mut namespaces, ..
-        } = &mut *node.kind_mut(activation.gc())
-        else {
+        let E4XNodeKind::Element { namespaces, .. } = &mut *node.kind_mut(activation.gc()) else {
             unreachable!()
         };
         // 7.a. If there exists a namespace n ∈ x.[[InScopeNamespaces]],

@@ -1,5 +1,5 @@
 Testing _global.TextSnapshot
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.TextSnapshot.prototype
   getTextRunInfo, own, type=[function]
@@ -14,7 +14,7 @@ Testing _global.TextSnapshot.prototype
   constructor, own, type=[function]
   __proto__, own, type=[object]
 Testing _global.PrintJob
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.PrintJob.prototype
   orientation, own, READ_ONLY, type=[number]
@@ -28,7 +28,7 @@ Testing _global.PrintJob.prototype
   constructor, own, type=[function]
   __proto__, own, type=[object]
 Testing _global.MovieClipLoader
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.MovieClipLoader.prototype
   broadcastMessage, own, DONT_ENUM, type=[function]
@@ -41,7 +41,7 @@ Testing _global.MovieClipLoader.prototype
   constructor, own, type=[function]
   __proto__, own, type=[object]
 Testing _global.LocalConnection
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.LocalConnection.prototype
   isPerUser, own, DONT_ENUM, READ_ONLY, type=[undefined]
@@ -52,7 +52,7 @@ Testing _global.LocalConnection.prototype
   constructor, own, type=[function]
   __proto__, own, type=[object]
 Testing _global.textRenderer
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.textRenderer.prototype
   constructor, own, type=[function]
@@ -69,10 +69,31 @@ Testing _global.flash.external
   ExternalInterface, own, type=[function]
   __proto__, own, type=[object]
 Testing _global.flash.external.ExternalInterface
+  _toJS, own, DONT_ENUM, READ_ONLY, type=[function]
+  _objectToJS, own, DONT_ENUM, READ_ONLY, type=[function]
+  _arrayToJS, own, DONT_ENUM, READ_ONLY, type=[function]
+  _argumentsToAS, own, DONT_ENUM, READ_ONLY, type=[function]
+  _toAS, own, DONT_ENUM, READ_ONLY, type=[function]
+  _arrayToAS, own, DONT_ENUM, READ_ONLY, type=[function]
+  _objectToAS, own, DONT_ENUM, READ_ONLY, type=[function]
+  _toXML, own, DONT_ENUM, READ_ONLY, type=[function]
+  _objectToXML, own, DONT_ENUM, READ_ONLY, type=[function]
+  _argumentsToXML, own, DONT_ENUM, READ_ONLY, type=[function]
+  _arrayToXML, own, DONT_ENUM, READ_ONLY, type=[function]
+  _callIn, own, DONT_ENUM, READ_ONLY, type=[function]
   call, own, DONT_ENUM, READ_ONLY, type=[function]
   addCallback, own, DONT_ENUM, READ_ONLY, type=[function]
   available, own, DONT_ENUM, READ_ONLY, type=[boolean]
-  prototype, own, type=[object]
+  _useSetReturnValueHack, own, DONT_ENUM, READ_ONLY, type=[function]
+  _jsQuoteString, own, DONT_ENUM, READ_ONLY, type=[function]
+  _unescapeXML, own, DONT_ENUM, READ_ONLY, type=[function]
+  _escapeXML, own, DONT_ENUM, READ_ONLY, type=[function]
+  _callOut, own, DONT_ENUM, READ_ONLY, type=[function]
+  _evalJS, own, DONT_ENUM, READ_ONLY, type=[function]
+  _addCallback, own, DONT_ENUM, READ_ONLY, type=[function]
+  _objectID, own, DONT_ENUM, READ_ONLY, type=[function]
+  _initJS, own, DONT_ENUM, READ_ONLY, type=[function]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.flash.external.ExternalInterface.prototype
   constructor, own, type=[function]
@@ -82,13 +103,13 @@ Testing _global.flash.net
   FileReference, own, type=[function]
   __proto__, own, type=[object]
 Testing _global.flash.net.FileReferenceList
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.flash.net.FileReferenceList.prototype
   constructor, own, type=[function]
   __proto__, own, type=[object]
 Testing _global.flash.net.FileReference
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.flash.net.FileReference.prototype
   broadcastMessage, own, DONT_ENUM, type=[function]
@@ -116,7 +137,7 @@ Testing _global.flash.geom
   Rectangle, own, type=[function]
   __proto__, own, type=[object]
 Testing _global.flash.geom.Transform
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.flash.geom.Transform.prototype
   pixelBounds, own, READ_ONLY, type=[undefined]
@@ -127,7 +148,7 @@ Testing _global.flash.geom.Transform.prototype
   constructor, own, type=[function]
   __proto__, own, type=[object]
 Testing _global.flash.geom.ColorTransform
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.flash.geom.ColorTransform.prototype
   toString, own, type=[function]
@@ -144,7 +165,7 @@ Testing _global.flash.geom.ColorTransform.prototype
   constructor, own, type=[function]
   __proto__, own, type=[object]
 Testing _global.flash.geom.Matrix
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.flash.geom.Matrix.prototype
   toString, own, type=[function]
@@ -165,7 +186,7 @@ Testing _global.flash.geom.Point
   interpolate, own, type=[function]
   polar, own, type=[function]
   distance, own, type=[function]
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.flash.geom.Point.prototype
   toString, own, type=[function]
@@ -179,7 +200,7 @@ Testing _global.flash.geom.Point.prototype
   constructor, own, type=[function]
   __proto__, own, type=[object]
 Testing _global.flash.geom.Rectangle
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.flash.geom.Rectangle.prototype
   toString, own, type=[function]
@@ -219,7 +240,7 @@ Testing _global.flash.filters
   BitmapFilter, own, type=[function]
   __proto__, own, type=[object]
 Testing _global.flash.filters.DisplacementMapFilter
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.flash.filters.DisplacementMapFilter.prototype
   clone, type=[function]
@@ -235,7 +256,7 @@ Testing _global.flash.filters.DisplacementMapFilter.prototype
   constructor, own, type=[function]
   __proto__, own, type=[object]
 Testing _global.flash.filters.ColorMatrixFilter
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.flash.filters.ColorMatrixFilter.prototype
   clone, type=[function]
@@ -243,7 +264,7 @@ Testing _global.flash.filters.ColorMatrixFilter.prototype
   constructor, own, type=[function]
   __proto__, own, type=[object]
 Testing _global.flash.filters.ConvolutionFilter
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.flash.filters.ConvolutionFilter.prototype
   clone, type=[function]
@@ -259,7 +280,7 @@ Testing _global.flash.filters.ConvolutionFilter.prototype
   constructor, own, type=[function]
   __proto__, own, type=[object]
 Testing _global.flash.filters.GradientBevelFilter
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.flash.filters.GradientBevelFilter.prototype
   clone, type=[function]
@@ -277,7 +298,7 @@ Testing _global.flash.filters.GradientBevelFilter.prototype
   constructor, own, type=[function]
   __proto__, own, type=[object]
 Testing _global.flash.filters.GradientGlowFilter
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.flash.filters.GradientGlowFilter.prototype
   clone, type=[function]
@@ -295,7 +316,7 @@ Testing _global.flash.filters.GradientGlowFilter.prototype
   constructor, own, type=[function]
   __proto__, own, type=[object]
 Testing _global.flash.filters.BevelFilter
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.flash.filters.BevelFilter.prototype
   clone, type=[function]
@@ -314,7 +335,7 @@ Testing _global.flash.filters.BevelFilter.prototype
   constructor, own, type=[function]
   __proto__, own, type=[object]
 Testing _global.flash.filters.GlowFilter
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.flash.filters.GlowFilter.prototype
   clone, type=[function]
@@ -329,7 +350,7 @@ Testing _global.flash.filters.GlowFilter.prototype
   constructor, own, type=[function]
   __proto__, own, type=[object]
 Testing _global.flash.filters.BlurFilter
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.flash.filters.BlurFilter.prototype
   clone, type=[function]
@@ -339,7 +360,7 @@ Testing _global.flash.filters.BlurFilter.prototype
   constructor, own, type=[function]
   __proto__, own, type=[object]
 Testing _global.flash.filters.DropShadowFilter
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.flash.filters.DropShadowFilter.prototype
   clone, type=[function]
@@ -357,7 +378,7 @@ Testing _global.flash.filters.DropShadowFilter.prototype
   constructor, own, type=[function]
   __proto__, own, type=[object]
 Testing _global.flash.filters.BitmapFilter
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.flash.filters.BitmapFilter.prototype
   clone, own, type=[function]
@@ -367,42 +388,42 @@ Testing _global.flash.display
   BitmapData, own, type=[function]
   __proto__, own, type=[object]
 Testing _global.flash.display.BitmapData
+  loadBitmap, own, type=[function]
   ALPHA_CHANNEL, own, type=[number]
   BLUE_CHANNEL, own, type=[number]
   GREEN_CHANNEL, own, type=[number]
   RED_CHANNEL, own, type=[number]
-  loadBitmap, own, type=[function]
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.flash.display.BitmapData.prototype
   compare, own, type=[function]
-  threshold, own, type=[function]
-  scroll, own, type=[function]
-  pixelDissolve, own, type=[function]
-  paletteMap, own, type=[function]
-  merge, own, type=[function]
-  copyPixels, own, type=[function]
   generateFilterRect, own, type=[function]
-  hitTest, own, type=[function]
-  draw, own, type=[function]
-  applyFilter, own, type=[function]
-  perlinNoise, own, type=[function]
-  getColorBoundsRect, own, type=[function]
-  colorTransform, own, type=[function]
-  noise, own, type=[function]
-  floodFill, own, type=[function]
   dispose, own, type=[function]
   clone, own, type=[function]
-  fillRect, own, type=[function]
   copyChannel, own, type=[function]
+  noise, own, type=[function]
+  merge, own, type=[function]
+  paletteMap, own, type=[function]
+  hitTest, own, type=[function]
+  colorTransform, own, type=[function]
+  perlinNoise, own, type=[function]
+  getColorBoundsRect, own, type=[function]
+  floodFill, own, type=[function]
   setPixel32, own, type=[function]
-  setPixel, own, type=[function]
   getPixel32, own, type=[function]
+  pixelDissolve, own, type=[function]
+  draw, own, type=[function]
+  threshold, own, type=[function]
+  scroll, own, type=[function]
+  applyFilter, own, type=[function]
+  copyPixels, own, type=[function]
+  fillRect, own, type=[function]
+  setPixel, own, type=[function]
   getPixel, own, type=[function]
-  rectangle, own, READ_ONLY, type=[number]
   transparent, own, READ_ONLY, type=[number]
-  width, own, READ_ONLY, type=[number]
+  rectangle, own, READ_ONLY, type=[number]
   height, own, READ_ONLY, type=[number]
+  width, own, READ_ONLY, type=[number]
   constructor, own, type=[function]
   __proto__, own, type=[object]
 Testing _global.flash.text
@@ -469,7 +490,7 @@ Testing _global.System.IME.JAPANESE_KATAKANA_HALF
 Testing _global.System.IME.KOREAN
 Testing _global.System.IME.UNKNOWN
 Testing _global.System.IME.broadcastMessage
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.System.IME.broadcastMessage.prototype
   apply, own, DONT_ENUM, type=[function]
@@ -480,7 +501,7 @@ Testing _global.System.IME.removeListener
   apply, type=[function]
   call, type=[function]
   constructor, type=[function]
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.System.IME.removeListener.prototype
   apply, own, type=[function]
@@ -491,7 +512,7 @@ Testing _global.System.IME.addListener
   apply, type=[function]
   call, type=[function]
   constructor, type=[function]
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.System.IME.addListener.prototype
   apply, own, type=[function]
@@ -542,7 +563,7 @@ Testing _global.System.Product
   apply, type=[function]
   call, type=[function]
   constructor, type=[function]
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.System.Product.prototype
   installedVersion, own, type=[function]
@@ -662,7 +683,7 @@ Testing _global.Video
   apply, type=[function]
   call, type=[function]
   constructor, type=[function]
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.Video.prototype
   attachVideo, own, DONT_ENUM, type=[function]
@@ -727,7 +748,7 @@ Testing _global.TextFormat
   apply, type=[function]
   call, type=[function]
   constructor, type=[function]
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.TextFormat.prototype
   letterSpacing, own, READ_ONLY, type=[undefined]
@@ -757,7 +778,7 @@ Testing _global.TextField
   call, type=[function]
   constructor, type=[function]
   StyleSheet, own, DONT_ENUM, type=[function]
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.TextField.prototype
   styleSheet, own, READ_ONLY, type=[undefined]
@@ -809,17 +830,17 @@ Testing _global.Button
   apply, type=[function]
   call, type=[function]
   constructor, type=[function]
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.Button.prototype
   tabIndex, own, READ_ONLY, type=[undefined]
-  cacheAsBitmap, own, DONT_ENUM, READ_ONLY, type=[undefined]
-  filters, own, DONT_ENUM, READ_ONLY, type=[undefined]
-  scale9Grid, own, DONT_ENUM, READ_ONLY, type=[undefined]
   blendMode, own, READ_ONLY, type=[undefined]
-  getDepth, own, READ_ONLY, type=[function]
-  useHandCursor, own, type=[boolean]
+  cacheAsBitmap, own, READ_ONLY, type=[undefined]
+  filters, own, READ_ONLY, type=[undefined]
+  scale9Grid, own, READ_ONLY, type=[undefined]
+  getDepth, own, type=[function]
   enabled, own, type=[boolean]
+  useHandCursor, own, type=[boolean]
   constructor, own, type=[function]
   __proto__, own, type=[object]
 Testing _global.Key
@@ -1065,7 +1086,7 @@ Testing _global.LoadVars
   apply, type=[function]
   call, type=[function]
   constructor, type=[function]
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.LoadVars.prototype
   addRequestHeader, own, DONT_ENUM, type=[function]
@@ -1085,7 +1106,7 @@ Testing _global.XML
   apply, type=[function]
   call, type=[function]
   constructor, type=[function]
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.XML.prototype
   namespaceURI, READ_ONLY, type=[undefined]
@@ -1129,7 +1150,7 @@ Testing _global.XMLNode
   apply, type=[function]
   call, type=[function]
   constructor, type=[function]
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.XMLNode.prototype
   namespaceURI, own, READ_ONLY, type=[undefined]
@@ -1159,7 +1180,7 @@ Testing _global.Sound
   apply, type=[function]
   call, type=[function]
   constructor, type=[function]
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.Sound.prototype
   getBytesTotal, own, DONT_ENUM, READ_ONLY, type=[function]
@@ -1315,7 +1336,7 @@ Testing _global.Array
   UNIQUESORT, own, type=[number]
   DESCENDING, own, type=[number]
   CASEINSENSITIVE, own, type=[number]
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.Array.prototype
   sortOn, own, DONT_ENUM, type=[function]
@@ -1338,7 +1359,7 @@ Testing _global.String
   call, type=[function]
   constructor, type=[function]
   fromCharCode, own, DONT_ENUM, type=[function]
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.String.prototype
   substr, own, DONT_ENUM, type=[function]
@@ -1361,7 +1382,7 @@ Testing _global.Date
   call, type=[function]
   constructor, type=[function]
   UTC, own, DONT_ENUM, READ_ONLY, type=[function]
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.Date.prototype
   valueOf, own, type=[function]
@@ -1408,7 +1429,7 @@ Testing _global.Boolean
   apply, type=[function]
   call, type=[function]
   constructor, type=[function]
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.Boolean.prototype
   toString, own, type=[function]
@@ -1424,13 +1445,14 @@ Testing _global.Number
   NaN, own, DONT_ENUM, READ_ONLY, type=[number]
   MIN_VALUE, own, DONT_ENUM, READ_ONLY, type=[number]
   MAX_VALUE, own, DONT_ENUM, READ_ONLY, type=[number]
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.Number.prototype
   toString, own, type=[function]
   valueOf, own, type=[function]
   constructor, own, type=[function]
   __proto__, own, type=[object]
+Testing _global.o
 Testing _global.setTimeout
   apply, type=[function]
   call, type=[function]
@@ -1500,7 +1522,7 @@ Testing _global.Error
   apply, type=[function]
   call, type=[function]
   constructor, type=[function]
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.Error.prototype
   toString, own, type=[function]
@@ -1512,7 +1534,7 @@ Testing _global.ContextMenu
   apply, type=[function]
   call, type=[function]
   constructor, type=[function]
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.ContextMenu.prototype
   hideBuiltInItems, own, DONT_ENUM, type=[function]
@@ -1523,7 +1545,7 @@ Testing _global.ContextMenuItem
   apply, type=[function]
   call, type=[function]
   constructor, type=[function]
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.ContextMenuItem.prototype
   copy, own, DONT_ENUM, type=[function]
@@ -1537,7 +1559,7 @@ Testing _global.SharedObject
   getLocal, own, type=[function]
   getDiskUsage, own, DONT_ENUM, type=[function]
   deleteAll, own, DONT_ENUM, type=[function]
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.SharedObject.prototype
   onSync, own, DONT_ENUM, type=[function]
@@ -1555,43 +1577,73 @@ Testing _global.Microphone
   apply, type=[function]
   call, type=[function]
   constructor, type=[function]
-  prototype, own, type=[object]
+  names, own, READ_ONLY, type=[object]
+  get, own, type=[function]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.Microphone.prototype
+  setEncodeQuality, own, DONT_ENUM, type=[function]
+  setFramesPerPacket, own, DONT_ENUM, type=[function]
+  setCodec, own, DONT_ENUM, type=[function]
+  setUseEchoSuppression, own, DONT_ENUM, type=[function]
+  setGain, own, DONT_ENUM, type=[function]
+  setRate, own, DONT_ENUM, type=[function]
+  setSilenceLevel, own, DONT_ENUM, type=[function]
   constructor, own, type=[function]
   __proto__, own, type=[object]
 Testing _global.Camera
   apply, type=[function]
   call, type=[function]
   constructor, type=[function]
-  prototype, own, type=[object]
+  names, own, READ_ONLY, type=[object]
+  get, own, type=[function]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.Camera.prototype
+  setCursor, own, DONT_ENUM, type=[function]
+  setLoopback, own, DONT_ENUM, type=[function]
+  setMotionLevel, own, DONT_ENUM, type=[function]
+  setKeyFrameInterval, own, DONT_ENUM, type=[function]
+  setQuality, own, DONT_ENUM, type=[function]
+  setMode, own, DONT_ENUM, type=[function]
   constructor, own, type=[function]
   __proto__, own, type=[object]
 Testing _global.NetStream
   apply, type=[function]
   call, type=[function]
   constructor, type=[function]
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.NetStream.prototype
-  setBufferTime, own, DONT_ENUM, type=[function]
-  seek, own, DONT_ENUM, type=[function]
-  pause, own, DONT_ENUM, type=[function]
-  play, own, DONT_ENUM, type=[function]
   time, own, READ_ONLY, type=[undefined]
   bytesTotal, own, READ_ONLY, type=[undefined]
   bytesLoaded, own, READ_ONLY, type=[undefined]
   bufferTime, own, READ_ONLY, type=[undefined]
   bufferLength, own, READ_ONLY, type=[undefined]
+  backBufferTime, own, DONT_ENUM, READ_ONLY, type=[undefined]
+  maxPauseBufferTime, own, DONT_ENUM, READ_ONLY, type=[undefined]
+  checkPolicyFile, own, DONT_ENUM, READ_ONLY, type=[undefined]
+  getInfo, own, DONT_ENUM, type=[function]
+  setBufferTime, own, DONT_ENUM, type=[function]
+  send, own, DONT_ENUM, type=[function]
+  attachVideo, own, DONT_ENUM, type=[function]
+  attachAudio, own, DONT_ENUM, type=[function]
+  close, own, DONT_ENUM, type=[function]
+  onPeerConnect, own, DONT_ENUM, type=[function]
+  seek, own, DONT_ENUM, type=[function]
+  pause, own, DONT_ENUM, type=[function]
+  receiveVideo, own, DONT_ENUM, type=[function]
+  receiveAudio, own, DONT_ENUM, type=[function]
+  play2, own, DONT_ENUM, type=[function]
+  play, own, DONT_ENUM, type=[function]
+  publish, own, DONT_ENUM, type=[function]
   constructor, own, type=[function]
   __proto__, own, type=[object]
 Testing _global.NetConnection
   apply, type=[function]
   call, type=[function]
   constructor, type=[function]
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.NetConnection.prototype
   uri, own, READ_ONLY, type=[undefined]
@@ -1607,7 +1659,7 @@ Testing _global.Color
   apply, type=[function]
   call, type=[function]
   constructor, type=[function]
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.Color.prototype
   getTransform, own, DONT_ENUM, READ_ONLY, type=[function]
@@ -1624,7 +1676,7 @@ Testing _global.AsBroadcaster
   removeListener, own, DONT_ENUM, type=[function]
   addListener, own, DONT_ENUM, type=[function]
   initialize, own, DONT_ENUM, type=[function]
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.AsBroadcaster.prototype
   constructor, own, type=[function]
@@ -1633,7 +1685,7 @@ Testing _global.XMLSocket
   apply, type=[function]
   call, type=[function]
   constructor, type=[function]
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.XMLSocket.prototype
   onXML, own, DONT_ENUM, type=[function]
@@ -1650,7 +1702,7 @@ Testing _global.MovieClip
   apply, type=[function]
   call, type=[function]
   constructor, type=[function]
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.MovieClip.prototype
   createTextField, own, DONT_ENUM, type=[function]
@@ -1714,7 +1766,7 @@ Testing _global.Function
   apply, type=[function]
   call, type=[function]
   constructor, type=[function]
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.Function.prototype
   apply, own, type=[function]
@@ -1726,7 +1778,7 @@ Testing _global.Object
   call, type=[function]
   constructor, type=[function]
   registerClass, own, DONT_ENUM, READ_ONLY, type=[function]
-  prototype, own, type=[object]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.Object.prototype
   isPropertyEnumerable, own, type=[function]

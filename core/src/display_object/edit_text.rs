@@ -26,7 +26,7 @@ use crate::html::{
     FormatSpans, Layout, LayoutBox, LayoutContent, LayoutLine, LayoutMetrics, Position, TextFormat,
 };
 use crate::prelude::*;
-use crate::string::{utils as string_utils, AvmString, SwfStrExt as _, WStr, WString};
+use crate::string::{AvmString, SwfStrExt as _, WStr, WString, utils as string_utils};
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::{AvmObject, Instantiator};
 use chrono::DateTime;
@@ -1051,7 +1051,10 @@ impl<'gc> EditText<'gc> {
     /// Returns the selection, but takes into account whether the selection should be rendered.
     fn visible_selection(self) -> Option<TextSelection> {
         let selection = self.0.selection.get()?;
-        #[expect(clippy::collapsible_else_if)]
+        // TODO: Remove this #[allow] once Rust 1.94 is released.
+        // Clippy 0.1.94+ (PR #16286) no longer fires collapsible_else_if when both
+        // branches contain if-else expressions, recognizing the parallel structure.
+        #[allow(clippy::collapsible_else_if)]
         if selection.is_caret() {
             if self.has_focus() && !self.0.flags.get().contains(EditTextFlag::READ_ONLY) {
                 Some(selection)
@@ -1272,7 +1275,7 @@ impl<'gc> EditText<'gc> {
                 text,
                 self.text_transform(color),
                 params,
-                |pos, transform, glyph, advance, x| {
+                &mut |pos, transform, glyph, advance, x| {
                     if glyph.renderable(context) {
                         // If it's highlighted, override the color.
                         if matches!(visible_selection, Some(visible_selection) if visible_selection.contains(start + pos)) {
@@ -1457,26 +1460,25 @@ impl<'gc> EditText<'gc> {
     pub fn propagate_text_binding(self, activation: &mut Avm1Activation<'_, 'gc>) {
         if !self.contains_flag(EditTextFlag::FIRING_VARIABLE_BINDING) {
             self.set_flag(EditTextFlag::FIRING_VARIABLE_BINDING, true);
-            if let Some(variable_path) = self.variable() {
-                if let Ok(Some((object, property))) =
+            if let Some(variable_path) = self.variable()
+                && let Ok(Some((object, property))) =
                     activation.resolve_variable_path(self.avm1_parent().unwrap(), &variable_path)
-                {
-                    // Note that this can call virtual setters, even though the opposite direction won't work
-                    // (virtual property changes do not affect the text field)
-                    activation.run_with_child_frame_for_display_object(
-                        "[Propagate Text Binding]",
-                        self.avm1_parent().unwrap(),
-                        self.movie().version(),
-                        |activation| {
-                            let property = AvmString::new(activation.gc(), property);
-                            let _ = object.set(
-                                property,
-                                AvmString::new(activation.gc(), self.html_text()).into(),
-                                activation,
-                            );
-                        },
-                    );
-                }
+            {
+                // Note that this can call virtual setters, even though the opposite direction won't work
+                // (virtual property changes do not affect the text field)
+                activation.run_with_child_frame_for_display_object(
+                    "[Propagate Text Binding]",
+                    self.avm1_parent().unwrap(),
+                    self.movie().version(),
+                    |activation| {
+                        let property = AvmString::new(activation.gc(), property);
+                        let _ = object.set(
+                            property,
+                            AvmString::new(activation.gc(), self.html_text()).into(),
+                            activation,
+                        );
+                    },
+                );
             }
             self.set_flag(EditTextFlag::FIRING_VARIABLE_BINDING, false);
         }
@@ -1625,7 +1627,7 @@ impl<'gc> EditText<'gc> {
                     text,
                     self.text_transform(color),
                     params,
-                    |pos, _transform, _glyph, advance, x| {
+                    &mut |pos, _transform, _glyph, advance, x| {
                         if local_position.x >= x {
                             if local_position.x > x + (advance / 2) {
                                 result = string_utils::next_char_boundary(text, pos);
@@ -2672,7 +2674,12 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
 
         fn is_transform_positive_scale_only(context: &mut RenderContext) -> bool {
             let Matrix { a, b, c, d, .. } = context.transform_stack.transform().matrix;
-            b == 0.0 && c == 0.0 && a > 0.0 && d > 0.0
+            // Flash does allow small shear. The following value is higher than
+            // expected due to the fact that the final calculated shear differs
+            // between Flash and Ruffle, and using a precise value would hide
+            // some objects that should otherwise be shown.
+            const ALLOWED_SHEAR: f32 = 0.006;
+            b.abs() < ALLOWED_SHEAR && c.abs() < ALLOWED_SHEAR && a > 0.0 && d > 0.0
         }
 
         // EditText is not rendered if device font is used
@@ -3015,15 +3022,15 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
                 self.set_selection(Some(TextSelection::for_position(self.text_length())));
             }
 
-            if let Some((url, target)) = link_to_open {
-                if !url.is_empty() {
-                    // TODO: This fires on mouse DOWN but it should be mouse UP...
-                    // but only if it went down in the same span.
-                    // Needs more advanced focus handling than we have at time of writing this comment.
-                    // TODO This also needs to fire only if the user clicked on the link,
-                    //   currently it fires when the cursor position resolves to one in the link.
-                    self.open_url(context, &url, &target);
-                }
+            if let Some((url, target)) = link_to_open
+                && !url.is_empty()
+            {
+                // TODO: This fires on mouse DOWN but it should be mouse UP...
+                // but only if it went down in the same span.
+                // Needs more advanced focus handling than we have at time of writing this comment.
+                // TODO This also needs to fire only if the user clicked on the link,
+                //   currently it fires when the cursor position resolves to one in the link.
+                self.open_url(context, &url, &target);
             }
 
             return ClipEventResult::Handled;
@@ -3031,10 +3038,10 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
 
         if let ClipEvent::MouseMove = event {
             // If a mouse has moved and this EditTest is pressed, we need to update the selection.
-            if InteractiveObject::option_ptr_eq(context.mouse_data.pressed, Some(self.into())) {
-                if let Some(position) = self.screen_position_to_index(*context.mouse_position) {
-                    self.handle_drag(position);
-                }
+            if InteractiveObject::option_ptr_eq(context.mouse_data.pressed, Some(self.into()))
+                && let Some(position) = self.screen_position_to_index(*context.mouse_position)
+            {
+                self.handle_drag(position);
             }
         }
 

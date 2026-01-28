@@ -38,12 +38,12 @@ use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use chardetng::EncodingDetector;
 use encoding_rs::{UTF_8, WINDOWS_1252};
-use gc_arena::collect::Trace;
 use gc_arena::Collect;
+use gc_arena::collect::Trace;
 use indexmap::IndexMap;
 use ruffle_macros::istr;
-use ruffle_render::utils::{determine_jpeg_tag_format, JpegTagFormat};
-use slotmap::{new_key_type, SlotMap};
+use ruffle_render::utils::{JpegTagFormat, determine_jpeg_tag_format};
+use slotmap::{SlotMap, new_key_type};
 use std::borrow::Borrow;
 use std::fmt;
 use std::str::FromStr;
@@ -51,7 +51,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use swf::read::{extract_swz, read_compression_type};
 use thiserror::Error;
-use url::{form_urlencoded, ParseError, Url};
+use url::{ParseError, Url, form_urlencoded};
 
 new_key_type! {
     pub struct LoaderHandle;
@@ -454,14 +454,11 @@ impl<'gc> LoadManager<'gc> {
         }
         let handles: Vec<_> = context.load_manager.0.iter().map(|(h, _)| h).collect();
         for handle in handles {
-            let Some(MovieLoader { target_clip, .. }) = context.load_manager.get_loader(handle)
-            else {
-                continue;
-            };
-            if let Some(movie) = target_clip.as_movie_clip() {
-                if movie.try_fire_loaderinfo_events(context) {
-                    context.load_manager.remove_loader(handle)
-                }
+            if let Some(MovieLoader { target_clip, .. }) = context.load_manager.get_loader(handle)
+                && let Some(movie) = target_clip.as_movie_clip()
+                && movie.try_fire_loaderinfo_events(context)
+            {
+                context.load_manager.remove_loader(handle)
             }
         }
     }
@@ -692,37 +689,36 @@ impl<'gc> MovieLoader<'gc> {
                     player.lock().unwrap().mutate_with_update_context(|uc| {
                         // Make a copy of the properties on the root, so we can put them back after replacing it
                         let mut root_properties: IndexMap<AvmString, Value> = IndexMap::new();
-                        if let Some(root) = uc.stage.root_clip() {
-                            if let Some(root_object) = root.object1() {
-                                let mut activation = Activation::from_nothing(
-                                    uc,
-                                    ActivationIdentifier::root("unknown"),
-                                    root,
-                                );
-                                for key in root_object.get_keys(&mut activation, true) {
-                                    let val = root_object
-                                        .get_stored(key, &mut activation)
-                                        .unwrap_or(Value::Undefined);
-                                    root_properties.insert(key, val);
-                                }
+                        if let Some(root) = uc.stage.root_clip()
+                            && let Some(root_object) = root.object1()
+                        {
+                            let mut activation = Activation::from_nothing(
+                                uc,
+                                ActivationIdentifier::root("unknown"),
+                                root,
+                            );
+                            for key in root_object.get_keys(&mut activation, true) {
+                                let val = root_object
+                                    .get_stored(key, &mut activation)
+                                    .unwrap_or(Value::Undefined);
+                                root_properties.insert(key, val);
                             }
                         }
 
                         uc.replace_root_movie(movie);
 
                         // Add the copied properties back onto the new root
-                        if !root_properties.is_empty() {
-                            if let Some(root) = uc.stage.root_clip() {
-                                if let Some(clip_object) = root.object1() {
-                                    let mut activation = Activation::from_nothing(
-                                        uc,
-                                        ActivationIdentifier::root("unknown"),
-                                        root,
-                                    );
-                                    for (key, val) in root_properties {
-                                        let _ = clip_object.set(key, val, &mut activation);
-                                    }
-                                }
+                        if !root_properties.is_empty()
+                            && let Some(root) = uc.stage.root_clip()
+                            && let Some(clip_object) = root.object1()
+                        {
+                            let mut activation = Activation::from_nothing(
+                                uc,
+                                ActivationIdentifier::root("unknown"),
+                                root,
+                            );
+                            for (key, val) in root_properties {
+                                let _ = clip_object.set(key, val, &mut activation);
                             }
                         }
                     });
@@ -929,19 +925,19 @@ pub fn load_form_into_object<'gc>(
             }
 
             // Fire the onData method and event.
-            if let Some(display_object) = that.as_display_object() {
-                if let Some(movie_clip) = display_object.as_movie_clip() {
-                    activation.context.action_queue.queue_action(
-                        movie_clip.into(),
-                        ActionType::Method {
-                            object: that,
-                            name: istr!("onData"),
-                            args: vec![],
-                        },
-                        false,
-                    );
-                    movie_clip.event_dispatch(activation.context, ClipEvent::Data);
-                }
+            if let Some(display_object) = that.as_display_object()
+                && let Some(movie_clip) = display_object.as_movie_clip()
+            {
+                activation.context.action_queue.queue_action(
+                    movie_clip.into(),
+                    ActionType::Method {
+                        object: that,
+                        name: istr!("onData"),
+                        args: vec![],
+                    },
+                    false,
+                );
+                movie_clip.event_dispatch(activation.context, ClipEvent::Data);
             }
 
             Ok(())
@@ -1490,12 +1486,10 @@ impl<'gc> MovieLoader<'gc> {
         let sniffed_type = ContentType::sniff(data);
         let length = data.len();
 
-        if sniffed_type == ContentType::Unknown {
-            if let Ok(data) = extract_swz(data) {
-                return Self::movie_loader_data(
-                    handle, uc, &data, url, status, redirected, loader_url,
-                );
-            }
+        if sniffed_type == ContentType::Unknown
+            && let Ok(data) = extract_swz(data)
+        {
+            return Self::movie_loader_data(handle, uc, &data, url, status, redirected, loader_url);
         }
         let (clip, vm_data, from_bytes) = match uc.load_manager.get_loader(handle) {
             Some(Self {
@@ -1515,15 +1509,14 @@ impl<'gc> MovieLoader<'gc> {
         {
             use crate::avm2::globals::slots::flash_system_loader_context as loader_context_slots;
 
-            let domain = context
+            context
                 .map(|o| o.get_slot(loader_context_slots::APPLICATION_DOMAIN))
                 .and_then(|v| v.as_object())
                 .and_then(|o| o.as_application_domain())
                 .unwrap_or_else(|| {
                     let parent_domain = default_domain;
                     Avm2Domain::movie_domain(uc, parent_domain)
-                });
-            domain
+                })
         } else {
             // This is necessary when the MovieLoaderData is AVM1,
             // but loaded an AVM2 SWF (mixed AVM).
@@ -1599,6 +1592,22 @@ impl<'gc> MovieLoader<'gc> {
                     // and initialize it.
 
                     mc.replace_with_movie(uc, Some(movie.clone()), true, loader_info);
+
+                    // Update the MovieClip's script object prototype to match the new movie's version.
+                    // This is needed because the level clip may have been created by a loader with
+                    // a different SWF version, and its script object was set up with the wrong prototype.
+                    if !movie.is_action_script_3()
+                        && let Some(object) = mc.object1()
+                    {
+                        let new_proto = uc.avm1.prototypes(mc.swf_version()).movie_clip;
+
+                        object.define_value(
+                            uc.gc(),
+                            istr!(uc, "__proto__"),
+                            new_proto.into(),
+                            Attribute::DONT_ENUM | Attribute::DONT_DELETE,
+                        );
+                    }
 
                     // Loaded movies are considered to be timeline-instantiated
                     mc.set_instantiated_by_timeline(true);
@@ -1875,29 +1884,27 @@ impl<'gc> MovieLoader<'gc> {
             );
         }
 
-        if let Some(dobj) = dobj {
-            if dobj.as_movie_clip().is_some() {
-                // We call these methods after we initialize the `LoaderInfo`, but before
-                // we add the loaded clip as a child. The frame constructor should see
-                // 'this.parent == null' and 'this.stage == null'
-                dobj.post_instantiation(uc, None, Instantiator::Movie, false);
-                catchup_display_object_to_frame(uc, dobj);
-                // Movie clips created from ActionScript (including from a Loader) skip the next enterFrame,
-                // and consequently are observed to have their currentFrame lag one
-                // frame behind objects placed by the timeline (even if they were
-                // both placed in the same frame to begin with).
-                dobj.base().set_skip_next_enter_frame(true);
+        if let Some(mc) = dobj.and_then(|dobj| dobj.as_movie_clip()) {
+            // We call these methods after we initialize the `LoaderInfo`, but before
+            // we add the loaded clip as a child. The frame constructor should see
+            // 'this.parent == null' and 'this.stage == null'
+            mc.post_instantiation(uc, None, Instantiator::Movie, false);
+            catchup_display_object_to_frame(uc, mc.into());
+            // Movie clips created from ActionScript (including from a Loader) skip the next enterFrame,
+            // and consequently are observed to have their currentFrame lag one
+            // frame behind objects placed by the timeline (even if they were
+            // both placed in the same frame to begin with).
+            mc.base().set_skip_next_enter_frame(true);
 
-                let flashvars = movie.as_ref().unwrap().parameters();
-                if let Some(object) = dobj.object1() {
-                    for (key, value) in flashvars {
-                        object.define_value(
-                            uc.gc(),
-                            AvmString::new_utf8(uc.gc(), key),
-                            AvmString::new_utf8(uc.gc(), value).into(),
-                            Attribute::empty(),
-                        );
-                    }
+            let flashvars = movie.as_ref().unwrap().parameters();
+            if let Some(object) = mc.object1() {
+                for (key, value) in flashvars {
+                    object.define_value(
+                        uc.gc(),
+                        AvmString::new_utf8(uc.gc(), key),
+                        AvmString::new_utf8(uc.gc(), value).into(),
+                        Attribute::empty(),
+                    );
                 }
             }
         }
@@ -1972,10 +1979,10 @@ impl<'gc> MovieLoader<'gc> {
                 loader_info
                     .set_loader_stream(LoaderStream::Swf(current_movie, dobj.unwrap()), uc.gc());
 
-                if let Some(dobj) = dobj {
-                    if dobj.as_movie_clip().is_none() {
-                        loader_info.fire_init_and_complete_events(uc, status, redirected);
-                    }
+                if let Some(dobj) = dobj
+                    && dobj.as_movie_clip().is_none()
+                {
+                    loader_info.fire_init_and_complete_events(uc, status, redirected);
                 }
             }
         }
@@ -2108,12 +2115,11 @@ impl<'gc> MovieLoader<'gc> {
     fn load_error_swf(mc: &mut MovieClip<'gc>, uc: &mut UpdateContext<'gc>, mut swf_url: String) {
         // If a local URL is fetched using the flash plugin, the _url property
         // won't be changed => It keeps being the parent SWF URL.
-        if cfg!(target_family = "wasm") {
-            if let Ok(url) = Url::parse(&swf_url) {
-                if url.scheme() == "file" {
-                    swf_url = mc.movie().url().to_string();
-                }
-            }
+        if cfg!(target_family = "wasm")
+            && let Ok(url) = Url::parse(&swf_url)
+            && url.scheme() == "file"
+        {
+            swf_url = mc.movie().url().to_string();
         };
 
         let error_movie = SwfMovie::error_movie(swf_url);

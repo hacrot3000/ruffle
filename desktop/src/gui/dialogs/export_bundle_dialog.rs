@@ -4,7 +4,9 @@ use rfd::FileHandle;
 use ruffle_frontend_utils::bundle::exporter::helpers::FilesystemHelper;
 use ruffle_frontend_utils::bundle::exporter::helpers::FilesystemHelperError;
 use ruffle_frontend_utils::bundle::info::BundleInformation;
+use ruffle_frontend_utils::content::ContentDescriptor;
 use ruffle_frontend_utils::player_options::PlayerOptions;
+use std::path::Path;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -12,14 +14,14 @@ use unic_langid::LanguageIdentifier;
 use url::Url;
 
 pub struct ExportBundleDialogConfiguration {
-    movie_url: Url,
+    content_descriptor: ContentDescriptor,
     player_options: PlayerOptions,
 }
 
 impl ExportBundleDialogConfiguration {
-    pub fn new(movie_url: Url, player_options: PlayerOptions) -> Self {
+    pub fn new(content_descriptor: ContentDescriptor, player_options: PlayerOptions) -> Self {
         Self {
-            movie_url,
+            content_descriptor,
             player_options,
         }
     }
@@ -32,13 +34,22 @@ struct LocalFileToExport {
 }
 
 impl LocalFileToExport {
-    fn new(path: PathBuf) -> Self {
-        let displayed_path = path.to_string_lossy().to_string();
+    fn new(path: PathBuf, base: Option<&Path>) -> Self {
         Self {
             export: true,
+            displayed_path: Self::to_displayed_path(&path, base),
             path,
-            displayed_path,
         }
+    }
+
+    fn to_displayed_path(path: &Path, base: Option<&Path>) -> String {
+        let relative_path = if let Some(base) = base {
+            path.strip_prefix(base).ok().unwrap_or(path)
+        } else {
+            path.file_name().map(Path::new).unwrap_or(path)
+        };
+
+        relative_path.to_string_lossy().to_string()
     }
 }
 
@@ -96,10 +107,10 @@ impl ExportBundleDialog {
     pub fn new(config: ExportBundleDialogConfiguration, picker: FilePicker) -> Self {
         let mut bundle_local_files = false;
         let mut local_files = Vec::new();
-        if let Ok(root_movie) = config.movie_url.to_file_path() {
+        if let Ok(root_movie) = config.content_descriptor.url.to_file_path() {
             bundle_local_files = true;
-            if let Some(movie_parent_dir) = root_movie.parent() {
-                for entry in walkdir::WalkDir::new(movie_parent_dir)
+            if let Some(root_content_path) = &config.content_descriptor.root_content_path {
+                for entry in walkdir::WalkDir::new(root_content_path)
                     .follow_links(false)
                     .into_iter()
                     .filter_map(|e| e.ok())
@@ -109,14 +120,14 @@ impl ExportBundleDialog {
                     }
 
                     let path = entry.path().to_owned();
-                    local_files.push(LocalFileToExport::new(path));
+                    local_files.push(LocalFileToExport::new(path, Some(root_content_path)));
                 }
             } else {
-                local_files.push(LocalFileToExport::new(root_movie));
+                local_files.push(LocalFileToExport::new(root_movie, None));
             }
         }
 
-        let suggested_name = Self::suggested_name(&config.movie_url);
+        let suggested_name = Self::suggested_name(&config.content_descriptor.url);
 
         Self {
             config,
@@ -286,7 +297,7 @@ impl ExportBundleDialog {
 
         let bundle_name = self.bundle_name.clone();
         let player_options = self.config.player_options.clone();
-        let movie_url = self.config.movie_url.clone();
+        let movie_url = self.config.content_descriptor.url.clone();
         let local_files: Vec<PathBuf> = self
             .local_files
             .iter()
@@ -381,6 +392,60 @@ mod tests {
         assert_eq!(
             ExportBundleDialog::suggested_name(&url("file:///d/a.b")),
             "a"
+        );
+    }
+
+    #[test]
+    fn file_to_export_displayed_path_no_base() {
+        assert_eq!(
+            LocalFileToExport::to_displayed_path(Path::new(""), None),
+            ""
+        );
+
+        assert_eq!(
+            LocalFileToExport::to_displayed_path(Path::new("file.txt"), None),
+            "file.txt"
+        );
+
+        assert_eq!(
+            LocalFileToExport::to_displayed_path(Path::new("a/b/c"), None),
+            "c"
+        );
+
+        assert_eq!(
+            LocalFileToExport::to_displayed_path(Path::new("/a/b/c"), None),
+            "c"
+        );
+    }
+
+    #[test]
+    fn file_to_export_displayed_path_base() {
+        assert_eq!(
+            LocalFileToExport::to_displayed_path(
+                Path::new("/a/b/c"),
+                Some(Path::new("/unrelated_path"))
+            ),
+            "/a/b/c"
+        );
+
+        assert_eq!(
+            LocalFileToExport::to_displayed_path(Path::new("/file.txt"), Some(Path::new("/"))),
+            "file.txt"
+        );
+
+        assert_eq!(
+            LocalFileToExport::to_displayed_path(Path::new("/a/b/c"), Some(Path::new("/a"))),
+            "b/c"
+        );
+
+        assert_eq!(
+            LocalFileToExport::to_displayed_path(Path::new("/a/b/c"), Some(Path::new("/a/b"))),
+            "c"
+        );
+
+        assert_eq!(
+            LocalFileToExport::to_displayed_path(Path::new("/a/b/c"), Some(Path::new("/a/"))),
+            "b/c"
         );
     }
 }

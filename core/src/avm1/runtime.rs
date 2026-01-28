@@ -4,13 +4,13 @@ use crate::avm1::globals::{as_broadcaster, create_globals};
 use crate::avm1::object::stage_object;
 use crate::avm1::property_map::PropertyMap;
 use crate::avm1::scope::Scope;
-use crate::avm1::{scope, Activation, ActivationIdentifier, Error, Object, Value};
+use crate::avm1::{Activation, ActivationIdentifier, Error, Object, Value, scope};
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer};
 use crate::frame_lifecycle::FramePhase;
 use crate::string::{AvmString, StringContext};
 use crate::tag_utils::SwfSlice;
-use crate::{avm1, avm_debug};
+use crate::{avm_debug, avm1};
 use gc_arena::{Collect, Gc, Mutation};
 use swf::avm1::read::Reader;
 use tracing::instrument;
@@ -464,7 +464,11 @@ impl<'gc> Avm1<'gc> {
                     .update_pending_removals();
             } else {
                 // TODO Investigate it. This situation seems impossible, yet it happens.
-                tracing::warn!("AVM1 object pending removal doesn't have a parent, object={:?}, pending removal={:?}", child, out);
+                tracing::warn!(
+                    "AVM1 object pending removal doesn't have a parent, object={:?}, pending removal={:?}",
+                    child,
+                    out
+                );
             }
         }
     }

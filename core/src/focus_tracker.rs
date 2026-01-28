@@ -1,3 +1,4 @@
+use crate::Player;
 use crate::avm1::Avm1;
 use crate::avm1::Value;
 use crate::avm2::{Activation, Avm2, EventObject};
@@ -7,7 +8,6 @@ pub use crate::display_object::{
 };
 use crate::display_object::{EditText, InteractiveObject, TInteractiveObject};
 use crate::events::{ClipEvent, KeyCode};
-use crate::Player;
 use either::Either;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
@@ -227,11 +227,11 @@ impl<'gc> FocusTracker<'gc> {
         // Note that this may suggest we should reorder operations on the text field:
         // first run this logic (and not care whether it's a mouse focus),
         // and then handle placing the caret.
-        if let Some(text_field) = self.get_as_edit_text() {
-            if !text_field.movie().is_action_script_3() {
-                let length = text_field.text_length();
-                text_field.set_selection(Some(TextSelection::for_range(0, length)));
-            }
+        if let Some(text_field) = self.get_as_edit_text()
+            && !text_field.movie().is_action_script_3()
+        {
+            let length = text_field.text_length();
+            text_field.set_selection(Some(TextSelection::for_range(0, length)));
         }
     }
 
@@ -259,8 +259,7 @@ impl<'gc> FocusTracker<'gc> {
             EventObject::focus_event(&mut activation, event_type, true, related_object, key_code);
         Avm2::dispatch_event(activation.context, event, target.into());
 
-        let canceled = event.event().is_cancelled();
-        canceled
+        event.event().is_cancelled()
     }
 
     fn roll_over(context: &mut UpdateContext<'gc>, new: Option<InteractiveObject<'gc>>) {

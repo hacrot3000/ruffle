@@ -2,12 +2,12 @@ use std::collections::BTreeMap;
 use std::rc::Rc;
 
 use super::property::Property;
+use crate::avm2::ArrayObject;
+use crate::avm2::ArrayStorage;
 use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::class::Class;
 use crate::avm2::object::{ByteArrayObject, ClassObject, ScriptObject, TObject, VectorObject};
 use crate::avm2::vector::VectorStorage;
-use crate::avm2::ArrayObject;
-use crate::avm2::ArrayStorage;
 use crate::avm2::{Activation, Error, Object, Value};
 use crate::avm2_stub_method;
 use crate::string::AvmString;
@@ -526,7 +526,9 @@ pub fn deserialize_value_impl<'gc>(
             if let Some(o) = object_map.get(r) {
                 (*o).into()
             } else {
-                tracing::error!("AMF3 deserializer got an object reference {r:?} to an object we've not seen yet");
+                tracing::error!(
+                    "AMF3 deserializer got an object reference {r:?} to an object we've not seen yet"
+                );
                 Value::Undefined
             }
         }

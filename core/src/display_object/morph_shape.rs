@@ -15,7 +15,7 @@ use ruffle_render::backend::ShapeHandle;
 use ruffle_render::commands::CommandHandler;
 use std::cell::{RefCell, RefMut};
 use std::sync::Arc;
-use swf::{Fixed16, Fixed8};
+use swf::{Fixed8, Fixed16};
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
@@ -377,7 +377,7 @@ impl MorphShapeShared {
                 *x += control_delta.dx + anchor_delta.dx;
                 *y += control_delta.dy + anchor_delta.dy;
             }
-            ShapeRecord::StyleChange(ref style_change) => {
+            ShapeRecord::StyleChange(style_change) => {
                 if let Some(move_to) = &style_change.move_to {
                     *x = move_to.x;
                     *y = move_to.y;

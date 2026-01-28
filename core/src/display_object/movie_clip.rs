@@ -1,11 +1,11 @@
 //! `MovieClip` display object and support code.
-use crate::avm1::globals::AVM_DEPTH_BIAS;
 use crate::avm1::Avm1;
+use crate::avm1::globals::AVM_DEPTH_BIAS;
 use crate::avm1::{Activation as Avm1Activation, ActivationIdentifier};
 use crate::avm1::{NativeObject as Avm1NativeObject, Object as Avm1Object};
+use crate::avm2::Activation as Avm2Activation;
 use crate::avm2::object::LoaderStream;
 use crate::avm2::script::Script;
-use crate::avm2::Activation as Avm2Activation;
 use crate::avm2::{
     Avm2, ClassObject as Avm2ClassObject, FunctionArgs as Avm2FunctionArgs, LoaderInfoObject,
     Object as Avm2Object, StageObject as Avm2StageObject, Value as Avm2Value,
@@ -16,7 +16,7 @@ use crate::backend::ui::MouseCursor;
 use crate::binary_data::BinaryData;
 use crate::character::{BitmapCharacter, Character, CompressedBitmap};
 use crate::context::{ActionType, RenderContext, UpdateContext};
-use crate::display_object::container::{dispatch_removed_event, ChildContainer};
+use crate::display_object::container::{ChildContainer, dispatch_removed_event};
 use crate::display_object::interactive::{
     InteractiveObject, InteractiveObjectBase, TInteractiveObject,
 };
@@ -27,7 +27,7 @@ use crate::display_object::{
 use crate::drawing::Drawing;
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
 use crate::font::{Font, FontType};
-use crate::frame_lifecycle::{run_inner_goto_frame, FramePhase};
+use crate::frame_lifecycle::{FramePhase, run_inner_goto_frame};
 use crate::library::MovieLibrary;
 use crate::limits::ExecutionLimit;
 use crate::loader::LoadManager;
@@ -54,8 +54,8 @@ use std::sync::Arc;
 use swf::extensions::ReadSwfExt;
 use swf::{ClipEventFlag, DefineBitsLossless, FrameLabelData, TagCode, UTF_8};
 
-use super::interactive::Avm2MousePick;
 use super::BitmapClass;
+use super::interactive::Avm2MousePick;
 
 type FrameNumber = u16;
 
@@ -412,10 +412,10 @@ impl<'gc> MovieClip<'gc> {
     /// Tries to fire events from our `LoaderInfo` object if we're ready - returns
     /// `true` if both `init` and `complete` have been fired
     pub fn try_fire_loaderinfo_events(self, context: &mut UpdateContext<'gc>) -> bool {
-        if self.0.initialized() {
-            if let Some(loader_info) = self.loader_info() {
-                return loader_info.fire_init_and_complete_events(context, 0, false);
-            }
+        if self.0.initialized()
+            && let Some(loader_info) = self.loader_info()
+        {
+            return loader_info.fire_init_and_complete_events(context, 0, false);
         }
         false
     }
@@ -523,7 +523,7 @@ impl<'gc> MovieClip<'gc> {
                 TagCode::DefineSound => shared.define_sound(context, reader),
                 TagCode::DefineVideoStream => shared.define_video_stream(context, reader),
                 TagCode::DefineSprite => {
-                    return shared.define_sprite(context, reader, tag_len, chunk_limit)
+                    return shared.define_sprite(context, reader, tag_len, chunk_limit);
                 }
                 TagCode::DefineText => shared.define_text(context, reader, 1),
                 TagCode::DefineText2 => shared.define_text(context, reader, 2),
@@ -854,8 +854,15 @@ impl<'gc> MovieClip<'gc> {
                 // AVM2 does not allow a clip to see while it is executing a frame script.
                 // The goto is instead queued and run once the frame script is completed.
                 self.0.queued_goto_frame.set(Some(frame));
+
+                // If we have a frame script on that frame, add ourselves to the
+                // frame script cleanup queue so that that frame script is
+                // correctly run.
+                if self.has_frame_script(frame) {
+                    context.frame_script_cleanup_queue.push_back(self);
+                }
             } else {
-                self.run_goto(context, frame, GotoType::Explicit);
+                self.run_goto(context, frame, false);
             }
         } else if self.movie().is_action_script_3() {
             // Despite not running, the goto still overwrites the currently enqueued frame.
@@ -1293,7 +1300,7 @@ impl<'gc> MovieClip<'gc> {
                     self.0.increment_current_frame();
                 }
             }
-            NextFrame::First => return self.run_goto(context, 1, GotoType::Implicit),
+            NextFrame::First => return self.run_goto(context, 1, true),
             NextFrame::Same => self.stop(context),
         }
 
@@ -1380,10 +1387,10 @@ impl<'gc> MovieClip<'gc> {
             .set(reader.get_ref().as_ptr() as u64 - tag_stream_start);
 
         // Check if our audio track has finished playing.
-        if let Some(audio_stream) = self.0.audio_stream.get() {
-            if !context.is_sound_playing(audio_stream) {
-                self.0.audio_stream.take();
-            }
+        if let Some(audio_stream) = self.0.audio_stream.get()
+            && !context.is_sound_playing(audio_stream)
+        {
+            self.0.audio_stream.take();
         }
 
         if matches!(next_frame, NextFrame::Next) && is_action_script_3 {
@@ -1464,10 +1471,10 @@ impl<'gc> MovieClip<'gc> {
                     // In AVM1, children are added in `run_frame` so this is necessary.
                     // In AVM2 we add them in `construct_frame` so calling this causes
                     // duplicate frames
-                    if let Some(child) = child.as_movie_clip() {
-                        if !movie.is_action_script_3() {
-                            child.run_frame_avm1(context);
-                        }
+                    if let Some(child) = child.as_movie_clip()
+                        && !movie.is_action_script_3()
+                    {
+                        child.run_frame_avm1(context);
                     }
                 }
 
@@ -1536,14 +1543,7 @@ impl<'gc> MovieClip<'gc> {
         }
     }
 
-    fn run_goto(
-        mut self,
-        context: &mut UpdateContext<'gc>,
-        frame: FrameNumber,
-        goto_type: GotoType,
-    ) {
-        let is_implicit = matches!(goto_type, GotoType::Implicit);
-
+    fn run_goto(mut self, context: &mut UpdateContext<'gc>, frame: FrameNumber, is_implicit: bool) {
         if cfg!(feature = "timeline_debug") {
             tracing::debug!(
                 "[{}]: {} from frame {} to frame {}",
@@ -1796,28 +1796,14 @@ impl<'gc> MovieClip<'gc> {
             .filter(|params| params.frame >= frame)
             .for_each(|goto| run_goto_command(self, context, goto));
 
-        match goto_type {
-            GotoType::Implicit => {}
-
-            GotoType::ExplicitQueued if self.swf_version() <= 9 => {
-                // Specifically for gotos that were queued because they were
-                // called in a framescript in SWFv9, we *only* run frame
-                // scripts, not a full inner goto frame.
-                self.check_has_pending_script();
-                self.run_frame_scripts(context);
-
-                // NOTE: FP doesn't use call recursion to implement this, so
-                // having a `nextFrame` on frame 1 and `prevFrame` on frame 2
-                // won't cause a stack overflow. However, it will hang the player.
-            }
-
+        if !is_implicit {
             // On AVM2, all explicit gotos act the same way as a normal new frame,
             // save for the lack of an enterFrame event. Since this must happen
             // before AS3 continues execution, this is effectively a "recursive
             // frame".
             //
             // Our queued place tags will now run at this time, too.
-            _ => run_inner_goto_frame(context, &removed_frame_scripts, self),
+            run_inner_goto_frame(context, &removed_frame_scripts, self);
         }
 
         self.assert_expected_tag_end(hit_target_frame);
@@ -2367,63 +2353,61 @@ impl<'gc> MovieClip<'gc> {
     fn run_local_frame_scripts(self, context: &mut UpdateContext<'gc>) {
         let avm2_object = self.0.object2.get();
 
-        if let Some(avm2_object) = avm2_object {
-            if self.0.has_pending_script.get() {
-                let frame_id = self.0.queued_script_frame.get();
-                // If we are already executing frame scripts, then we shouldn't
-                // run frame scripts recursively. This is because AVM2 can run
-                // gotos, which will both queue and run frame scripts for the
-                // whole movie again. If a goto is attempting to queue frame
-                // scripts on us AGAIN, we should allow the current stack to
-                // wind down before handling that.
-                if !self
-                    .0
-                    .contains_flag(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT)
-                {
-                    let is_fresh_frame = self.0.last_queued_script_frame.get() != Some(frame_id);
+        if let Some(avm2_object) = avm2_object
+            && self.0.has_pending_script.get()
+        {
+            let frame_id = self.0.queued_script_frame.get();
+            // If we are already executing frame scripts, then we shouldn't
+            // run frame scripts recursively. This is because AVM2 can run
+            // gotos, which will both queue and run frame scripts for the
+            // whole movie again. If a goto is attempting to queue frame
+            // scripts on us AGAIN, we should allow the current stack to
+            // wind down before handling that.
+            if !self
+                .0
+                .contains_flag(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT)
+            {
+                let is_fresh_frame = self.0.last_queued_script_frame.get() != Some(frame_id);
 
-                    if is_fresh_frame {
-                        if let Some(callable) = self.frame_script(frame_id) {
-                            let callable = Avm2Value::from(callable);
+                if is_fresh_frame && let Some(callable) = self.frame_script(frame_id) {
+                    let callable = Avm2Value::from(callable);
 
-                            self.0.last_queued_script_frame.set(Some(frame_id));
-                            self.0.has_pending_script.set(false);
-                            self.0
-                                .set_flag(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT, true);
+                    self.0.last_queued_script_frame.set(Some(frame_id));
+                    self.0.has_pending_script.set(false);
+                    self.0
+                        .set_flag(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT, true);
 
-                            let movie = self.movie();
-                            let domain = context
-                                .library
-                                .library_for_movie(movie)
-                                .unwrap()
-                                .avm2_domain();
+                    let movie = self.movie();
+                    let domain = context
+                        .library
+                        .library_for_movie(movie)
+                        .unwrap()
+                        .avm2_domain();
 
-                            let mut activation = Avm2Activation::from_domain(context, domain);
+                    let mut activation = Avm2Activation::from_domain(context, domain);
 
-                            if let Err(e) = callable.call(
-                                &mut activation,
-                                avm2_object.into(),
-                                Avm2FunctionArgs::empty(),
-                            ) {
-                                Avm2::uncaught_error(
-                                    &mut activation,
-                                    Some(self.into()),
-                                    e,
-                                    "Error running AVM2 frame script",
-                                );
-                            }
-
-                            self.0
-                                .set_flag(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT, false);
-                        }
+                    if let Err(e) = callable.call(
+                        &mut activation,
+                        avm2_object.into(),
+                        Avm2FunctionArgs::empty(),
+                    ) {
+                        Avm2::uncaught_error(
+                            &mut activation,
+                            Some(self.into()),
+                            e,
+                            "Error running AVM2 frame script",
+                        );
                     }
+
+                    self.0
+                        .set_flag(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT, false);
                 }
             }
         }
 
         let goto_frame = self.0.queued_goto_frame.take();
         if let Some(frame) = goto_frame {
-            self.run_goto(context, frame, GotoType::ExplicitQueued);
+            self.run_goto(context, frame, false);
         }
     }
 
@@ -2607,10 +2591,10 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             let Some(local_matrix) = self.global_to_local_matrix() else {
                 return false;
             };
-            if let Some(masker) = self.masker() {
-                if !masker.hit_test_shape(context, point, HitTestOptions::SKIP_INVISIBLE) {
-                    return false;
-                }
+            if let Some(masker) = self.masker()
+                && !masker.hit_test_shape(context, point, HitTestOptions::SKIP_INVISIBLE)
+            {
+                return false;
             }
 
             if !options.contains(HitTestOptions::SKIP_CHILDREN) {
@@ -2636,10 +2620,10 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             }
 
             let point = local_matrix * point;
-            if let Some(drawing) = self.drawing() {
-                if drawing.hit_test(point, &local_matrix) {
-                    return true;
-                }
+            if let Some(drawing) = self.drawing()
+                && drawing.hit_test(point, &local_matrix)
+            {
+                return true;
             }
         }
 
@@ -2703,12 +2687,11 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         if self
             .base()
             .set_perspective_projection(perspective_projection)
+            && let Some(parent) = self.parent()
         {
-            if let Some(parent) = self.parent() {
-                // Self-transform changes are automatically handled,
-                // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
-                parent.invalidate_cached_bitmap();
-            }
+            // Self-transform changes are automatically handled,
+            // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
+            parent.invalidate_cached_bitmap();
         }
     }
 
@@ -2836,12 +2819,11 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
             _ => None,
         };
 
-        if let Some(frame_name) = frame_name {
-            if let Some(frame_number) = self.frame_label_to_number(frame_name, context) {
-                if self.is_button_mode(context) {
-                    self.goto_frame(context, frame_number, true);
-                }
-            }
+        if let Some(frame_name) = frame_name
+            && let Some(frame_number) = self.frame_label_to_number(frame_name, context)
+            && self.is_button_mode(context)
+        {
+            self.goto_frame(context, frame_number, true);
         }
 
         let mut handled = ClipEventResult::NotHandled;
@@ -2876,18 +2858,18 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
 
                 // Queue ActionScript-defined event handlers after the SWF defined ones.
                 // (e.g., clip.onEnterFrame = foo).
-                if self.should_fire_event_handlers(context, event) {
-                    if let Some(name) = event.method_name(&context.strings) {
-                        context.action_queue.queue_action(
-                            self.into(),
-                            ActionType::Method {
-                                object,
-                                name,
-                                args: vec![],
-                            },
-                            event == ClipEvent::Unload,
-                        );
-                    }
+                if self.should_fire_event_handlers(context, event)
+                    && let Some(name) = event.method_name(&context.strings)
+                {
+                    context.action_queue.queue_action(
+                        self.into(),
+                        ActionType::Method {
+                            object,
+                            name,
+                            args: vec![],
+                        },
+                        event == ClipEvent::Unload,
+                    );
                 }
             }
         }
@@ -2985,13 +2967,12 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
             }
 
             // Check drawing, because this selects the current clip, it must have mouse enabled
-            if self.mouse_enabled() && check_non_interactive {
-                let point = local_matrix * point;
-                if let Some(drawing) = self.drawing() {
-                    if drawing.hit_test(point, &local_matrix) {
-                        return Some(this);
-                    }
-                }
+            if self.mouse_enabled()
+                && check_non_interactive
+                && let Some(drawing) = self.drawing()
+                && drawing.hit_test(local_matrix * point, &local_matrix)
+            {
+                return Some(this);
             }
         }
 
@@ -3015,10 +2996,10 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
                 return Avm2MousePick::Miss;
             };
 
-            if let Some(masker) = self.masker() {
-                if !masker.hit_test_shape(context, point, HitTestOptions::empty()) {
-                    return Avm2MousePick::Miss;
-                }
+            if let Some(masker) = self.masker()
+                && !masker.hit_test_shape(context, point, HitTestOptions::empty())
+            {
+                return Avm2MousePick::Miss;
             }
 
             if self.maskee().is_some() {
@@ -3130,18 +3111,15 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
             }
 
             // Check drawing, because this selects the current clip, it must have mouse enabled
-            if self.world_bounds().contains(point) {
-                let point = local_matrix * point;
-
-                if let Some(drawing) = self.drawing() {
-                    if drawing.hit_test(point, &local_matrix) {
-                        return if self.mouse_enabled() {
-                            Avm2MousePick::Hit(self.into())
-                        } else {
-                            Avm2MousePick::PropagateToParent
-                        };
-                    }
-                }
+            if self.world_bounds().contains(point)
+                && let Some(drawing) = self.drawing()
+                && drawing.hit_test(local_matrix * point, &local_matrix)
+            {
+                return if self.mouse_enabled() {
+                    Avm2MousePick::Hit(self.into())
+                } else {
+                    Avm2MousePick::PropagateToParent
+                };
             }
         }
 
@@ -4262,7 +4240,11 @@ impl<'gc, 'a> MovieClip<'gc> {
                                         activation.gc(),
                                     );
                                 } else {
-                                    tracing::error!("Associated class {:?} for symbol {} must extend flash.display.Bitmap or BitmapData, does neither", class_object.inner_class_definition().name(), id);
+                                    tracing::error!(
+                                        "Associated class {:?} for symbol {} must extend flash.display.Bitmap or BitmapData, does neither",
+                                        class_object.inner_class_definition().name(),
+                                        id
+                                    );
                                 }
                             }
                             None => {
@@ -4676,35 +4658,33 @@ impl<'a> GotoPlaceObject<'a> {
         tag_start: u64,
         version: u8,
     ) -> Self {
-        if is_rewind {
-            if let swf::PlaceObjectAction::Place(_) = place_object.action {
-                if place_object.matrix.is_none() {
-                    place_object.matrix = Some(Default::default());
-                }
-                if place_object.color_transform.is_none() {
-                    place_object.color_transform = Some(Default::default());
-                }
-                if place_object.ratio.is_none() {
-                    place_object.ratio = Some(Default::default());
-                }
-                if place_object.blend_mode.is_none() {
-                    place_object.blend_mode = Some(Default::default());
-                }
-                if place_object.is_bitmap_cached.is_none() {
-                    place_object.is_bitmap_cached = Some(Default::default());
-                }
-                if place_object.background_color.is_none() {
-                    place_object.background_color = Some(Color::from_rgba(0));
-                }
-                if place_object.filters.is_none() {
-                    place_object.filters = Some(Default::default());
-                }
-                // Purposely omitted properties:
-                // name, clip_depth, clip_actions, amf_data
-                // These properties are only set on initial placement in `MovieClip::instantiate_child`
-                // and can not be modified by subsequent PlaceObject tags.
-                // Also, is_visible flag persists during rewind unlike all other properties.
+        if is_rewind && let swf::PlaceObjectAction::Place(_) = place_object.action {
+            if place_object.matrix.is_none() {
+                place_object.matrix = Some(Default::default());
             }
+            if place_object.color_transform.is_none() {
+                place_object.color_transform = Some(Default::default());
+            }
+            if place_object.ratio.is_none() {
+                place_object.ratio = Some(Default::default());
+            }
+            if place_object.blend_mode.is_none() {
+                place_object.blend_mode = Some(Default::default());
+            }
+            if place_object.is_bitmap_cached.is_none() {
+                place_object.is_bitmap_cached = Some(Default::default());
+            }
+            if place_object.background_color.is_none() {
+                place_object.background_color = Some(Color::from_rgba(0));
+            }
+            if place_object.filters.is_none() {
+                place_object.filters = Some(Default::default());
+            }
+            // Purposely omitted properties:
+            // name, clip_depth, clip_actions, amf_data
+            // These properties are only set on initial placement in `MovieClip::instantiate_child`
+            // and can not be modified by subsequent PlaceObject tags.
+            // Also, is_visible flag persists during rewind unlike all other properties.
         }
 
         Self {
@@ -4922,10 +4902,4 @@ impl ClipEventHandler {
             action_data,
         }
     }
-}
-
-enum GotoType {
-    Implicit,
-    Explicit,
-    ExplicitQueued,
 }

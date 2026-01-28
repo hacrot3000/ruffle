@@ -11,8 +11,8 @@ use crate::tag_utils::SwfMovie;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::{
-    lock::{Lock, RefLock},
     Collect, Gc, GcWeak, Mutation,
+    lock::{Lock, RefLock},
 };
 use ruffle_common::utils::HasPrefixField;
 use std::cell::{Cell, Ref};
@@ -217,7 +217,7 @@ impl<'gc> LoaderInfoObject<'gc> {
             // NOTE: We have to check load progress here because this function
             // is called unconditionally at the end of every frame.
             let (should_complete, from_url) = match &*self.0.loaded_stream.borrow() {
-                LoaderStream::Swf(ref movie, root) => (
+                LoaderStream::Swf(movie, root) => (
                     root.as_movie_clip()
                         .map(|mc| mc.loaded_bytes() as i32 >= mc.total_bytes())
                         .unwrap_or(true),

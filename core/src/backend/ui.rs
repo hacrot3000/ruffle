@@ -4,8 +4,8 @@ use crate::{
     font::{FontFileData, FontQuery, FontRenderer},
 };
 use chrono::{DateTime, Utc};
-use fluent_templates::loader::langid;
 pub use fluent_templates::LanguageIdentifier;
+use fluent_templates::loader::langid;
 use std::{any::Any, borrow::Cow};
 use url::Url;
 
@@ -45,6 +45,22 @@ pub struct FileFilter {
     /// this category, with a */wildcard before each extension
     /// Note that a list of file filters will either all have Some(_) mac_type or all will have None
     pub mac_type: Option<String>,
+}
+
+impl FileFilter {
+    /// Returns extensions suitable for file dialogs.
+    /// When `is_mac` is true, uses `mac_type` if available; otherwise uses `extensions` with wildcards stripped.
+    /// `is_mac` should be true when the user uses a Mac.
+    pub fn extensions_for_dialog(&self, is_mac: bool) -> Vec<&str> {
+        if is_mac && let Some(mac_type) = &self.mac_type {
+            return mac_type.split(';').collect();
+        }
+
+        self.extensions
+            .split(';')
+            .map(|x| x.trim_start_matches("*."))
+            .collect()
+    }
 }
 
 /// A result of a file selection

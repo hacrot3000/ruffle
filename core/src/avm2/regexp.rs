@@ -3,10 +3,10 @@
 use std::borrow::Cow;
 use std::num::NonZero;
 
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::FunctionObject;
-use crate::avm2::Error;
 use crate::avm2::{ArrayObject, ArrayStorage, Value};
 use crate::context::UpdateContext;
 use crate::string::WString;
@@ -360,8 +360,9 @@ impl<'gc> RegExp<'gc> {
             for c in m.captures.iter().filter_map(Option::as_ref) {
                 storage.push(context.strings.substring(text, c.clone()).into());
                 if storage.length() >= limit {
-                    break; // Intentional bug to match Flash.
-                           // Causes adding parts past limit.
+                    // Intentional bug to match Flash.
+                    // Causes adding parts past limit.
+                    break;
                 }
             }
 

@@ -5,8 +5,8 @@ use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::error::{make_error_1007, make_error_1034, make_error_1112};
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::array::{
-    compare_numeric_slow, compare_string_case_insensitive, compare_string_case_sensitive,
-    ArrayIter, SortOptions,
+    ArrayIter, SortOptions, compare_numeric_slow, compare_string_case_insensitive,
+    compare_string_case_sensitive,
 };
 use crate::avm2::object::{ClassObject, Object, TObject as _, VectorObject};
 use crate::avm2::parameters::ParametersExt;
@@ -15,7 +15,7 @@ use crate::avm2::vector::VectorStorage;
 use crate::avm2::{Error, Multiname, QName};
 use crate::string::{AvmString, WStr};
 use ruffle_macros::istr;
-use std::cmp::{max, min, Ordering};
+use std::cmp::{Ordering, max, min};
 
 // Allocator for generic Vector, not specialized Vector
 pub fn vector_allocator<'gc>(
@@ -639,7 +639,7 @@ pub fn sort<'gc>(
 
         if !options.contains(SortOptions::UNIQUE_SORT) || unique_sort_satisfied {
             let mut vs = this.as_vector_storage_mut(activation.gc()).unwrap();
-            vs.replace_storage(values.into_iter().collect());
+            vs.replace_storage(values);
         }
 
         return Ok(this.into());

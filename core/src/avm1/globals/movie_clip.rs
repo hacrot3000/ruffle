@@ -3,7 +3,7 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::matrix::gradient_object_to_matrix;
-use crate::avm1::globals::{self, bitmap_filter, AVM_DEPTH_BIAS, AVM_MAX_DEPTH};
+use crate::avm1::globals::{self, AVM_DEPTH_BIAS, AVM_MAX_DEPTH, bitmap_filter};
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
 use crate::avm1::{self, ArrayBuilder, Object, Value};
@@ -14,7 +14,7 @@ use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::prelude::*;
 use crate::string::AvmString;
 use crate::vminterface::Instantiator;
-use crate::{avm1_stub, avm_error, avm_warn};
+use crate::{avm_error, avm_warn, avm1_stub};
 use ruffle_macros::istr;
 use ruffle_render::shape_utils::{DrawCommand, GradientType};
 use swf::{
@@ -63,8 +63,8 @@ macro_rules! mc_setter {
 }
 
 const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
-    "useHandCursor" => bool(true; DONT_ENUM);
-    "enabled" => bool(true; DONT_ENUM);
+    "useHandCursor" => value(true; DONT_ENUM);
+    "enabled" => value(true; DONT_ENUM);
     // NOTE: `tabIndex` is not enumerable in MovieClip, contrary to Button and TextField
     "tabIndex" => property(mc_getter!(tab_index), mc_setter!(set_tab_index); DONT_ENUM | VERSION_6);
     "_lockroot" => property(mc_getter!(lock_root), mc_setter!(set_lock_root); DONT_DELETE | DONT_ENUM);
@@ -931,7 +931,13 @@ fn duplicate_movie_clip<'gc>(
     // `duplicateMovieClip` method uses biased depth compared to `CloneSprite`.
     let depth = depth.wrapping_add(AVM_DEPTH_BIAS);
 
-    let new_clip = clone_sprite(movie_clip, activation.context, name, depth, init_object);
+    let new_clip = clone_sprite(
+        movie_clip.as_displayobject(),
+        activation.context,
+        name,
+        depth,
+        init_object,
+    );
 
     // On SWF<6 undefined is returned.
     if activation.swf_version() < 6 {
@@ -943,14 +949,19 @@ fn duplicate_movie_clip<'gc>(
         .map_or(Value::Undefined, |o| o.into()))
 }
 
+/// Clone the given display object with `CloneSprite` semantics.
+///
+/// It can be inferred from the docs that `duplicateMovieClip()` works only
+/// with MovieClips, but that's not the case.  It works with all display
+/// objects (including buttons and text).
 pub fn clone_sprite<'gc>(
-    movie_clip: MovieClip<'gc>,
+    sprite: DisplayObject<'gc>,
     context: &mut UpdateContext<'gc>,
     target: AvmString<'gc>,
     depth: Depth,
     init_object: Option<Object<'gc>>,
-) -> Option<MovieClip<'gc>> {
-    let Some(parent) = movie_clip.avm1_parent().and_then(|o| o.as_movie_clip()) else {
+) -> Option<DisplayObject<'gc>> {
+    let Some(parent) = sprite.avm1_parent().and_then(|o| o.as_movie_clip()) else {
         // Can't duplicate the root!
         return None;
     };
@@ -962,39 +973,63 @@ pub fn clone_sprite<'gc>(
     }
 
     let movie = parent.movie();
-    let new_clip = if movie_clip.id() != 0 {
+    let cloned_sprite = if sprite.id() != 0 {
         // Clip from SWF; instantiate a new copy.
         let library = context.library.library_for_movie(movie).unwrap();
         library
-            .instantiate_by_id(movie_clip.id(), context.gc())
+            .instantiate_by_id(sprite.id(), context.gc())
             .unwrap()
-            .as_movie_clip()
-            .unwrap()
+    } else if sprite.as_movie_clip().is_some() {
+        // Dynamically created MovieClip; create a new empty movie clip.
+        MovieClip::new(movie, context.gc()).as_displayobject()
+    } else if let Some(et) = sprite.as_edit_text() {
+        // Dynamically created TextField; create a new text field.
+        EditText::new(
+            context,
+            movie,
+            et.x().to_pixels(),
+            et.y().to_pixels(),
+            0.0,
+            0.0,
+        )
+        .as_displayobject()
     } else {
-        // Dynamically created clip; create a new empty movie clip.
-        MovieClip::new(movie, context.gc())
+        return None;
     };
-    new_clip.set_placed_by_avm1_script(true);
+    cloned_sprite.set_placed_by_avm1_script(true);
 
     // Set name and attach to parent.
-    new_clip.set_name(context.gc(), target);
-    parent.replace_at_depth(context, new_clip.into(), depth);
+    cloned_sprite.set_name(context.gc(), target);
+    parent.replace_at_depth(context, cloned_sprite, depth);
 
     // Copy display properties from previous clip to new clip.
-    new_clip.set_matrix(movie_clip.base().matrix());
-    new_clip.set_color_transform(movie_clip.base().color_transform());
+    cloned_sprite.set_matrix(sprite.base().matrix());
+    cloned_sprite.set_color_transform(sprite.base().color_transform());
 
-    new_clip.init_clip_event_handlers(movie_clip.clip_actions().into());
+    // Copy properties of MovieClip
+    if let (Some(cloned_sprite), Some(sprite)) =
+        (cloned_sprite.as_movie_clip(), sprite.as_movie_clip())
+    {
+        cloned_sprite.init_clip_event_handlers(sprite.clip_actions().into());
 
-    if let Some(drawing) = movie_clip.drawing().as_deref().cloned() {
-        *new_clip.drawing_mut() = drawing;
+        if let Some(drawing) = sprite.drawing().as_deref().cloned() {
+            *cloned_sprite.drawing_mut() = drawing;
+        }
     }
+
+    // Copy properties of TextField
+    if let (Some(cloned_sprite), Some(sprite)) =
+        (cloned_sprite.as_edit_text(), sprite.as_edit_text())
+    {
+        cloned_sprite.set_editable(sprite.is_editable());
+    }
+
     // TODO: Any other properties we should copy...?
     // Definitely not Object properties.
 
-    new_clip.post_instantiation(context, init_object, Instantiator::Avm1, true);
+    cloned_sprite.post_instantiation(context, init_object, Instantiator::Avm1, true);
 
-    Some(new_clip)
+    Some(cloned_sprite)
 }
 
 fn get_bytes_loaded<'gc>(
@@ -1018,50 +1053,42 @@ fn get_instance_at_depth<'gc>(
     activation: &mut Activation<'_, 'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if activation.swf_version() >= 7 {
-        let depth = if let Some(depth) = args.get(0) {
-            depth
-                .coerce_to_i32(activation)?
-                .wrapping_add(AVM_DEPTH_BIAS)
-        } else {
-            avm_error!(
-                activation,
-                "MovieClip.get_instance_at_depth: Too few parameters"
-            );
-            return Ok(Value::Undefined);
-        };
-        match movie_clip.child_by_depth(depth) {
-            Some(child) => {
-                // If the child doesn't have a corresponding AVM object, return mc itself.
-                // NOTE: this behavior was guessed from observing behavior for Text and Graphic;
-                // I didn't test other variants like Bitmap, MorphSpahe, Video
-                // or objects that weren't fully initialized yet.
-                match child.object1() {
-                    None => Ok(movie_clip.object1_or_undef()),
-                    Some(obj) => Ok(obj.into()),
-                }
-            }
-            None => Ok(Value::Undefined),
-        }
+    let depth = if let Some(depth) = args.get(0) {
+        depth
+            .coerce_to_i32(activation)?
+            .wrapping_add(AVM_DEPTH_BIAS)
     } else {
-        Ok(Value::Undefined)
+        avm_error!(
+            activation,
+            "MovieClip.get_instance_at_depth: Too few parameters"
+        );
+        return Ok(Value::Undefined);
+    };
+    match movie_clip.child_by_depth(depth) {
+        Some(child) => {
+            // If the child doesn't have a corresponding AVM object, return mc itself.
+            // NOTE: this behavior was guessed from observing behavior for Text and Graphic;
+            // I didn't test other variants like Bitmap, MorphSpahe, Video
+            // or objects that weren't fully initialized yet.
+            match child.object1() {
+                None => Ok(movie_clip.object1_or_undef()),
+                Some(obj) => Ok(obj.into()),
+            }
+        }
+        None => Ok(Value::Undefined),
     }
 }
 
 fn get_next_highest_depth<'gc>(
     movie_clip: MovieClip<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if activation.swf_version() >= 7 {
-        let depth = movie_clip
-            .highest_depth()
-            .wrapping_sub(AVM_DEPTH_BIAS - 1)
-            .max(0);
-        Ok(depth.into())
-    } else {
-        Ok(Value::Undefined)
-    }
+    let depth = movie_clip
+        .highest_depth()
+        .wrapping_sub(AVM_DEPTH_BIAS - 1)
+        .max(0);
+    Ok(depth.into())
 }
 
 fn goto_and_play<'gc>(

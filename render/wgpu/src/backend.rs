@@ -32,10 +32,35 @@ use ruffle_render::tessellator::ShapeTessellator;
 use std::any::Any;
 use std::borrow::Cow;
 use std::cell::Cell;
+use std::num::NonZeroU32;
 use std::sync::Arc;
 use swf::Color;
 use tracing::instrument;
 use wgpu::SubmissionIndex;
+
+/// Creates a wgpu instance with Ruffle's required configuration.
+///
+/// This disables indirect call validation because wgpu's validation runs a compute
+/// shader that uses `array<u32>`, which requires the `DYNAMIC_ARRAY_SIZE` feature.
+/// However, wgpu runs this shader without first checking if the device supports
+/// that feature, causing device creation to fail on GPUs that lack it.
+/// Since Ruffle doesn't use indirect draws, disabling this validation has no
+/// functional impact.
+///
+/// See <https://github.com/gfx-rs/wgpu/issues/8799>
+pub fn create_wgpu_instance(
+    backends: wgpu::Backends,
+    backend_options: wgpu::BackendOptions,
+) -> wgpu::Instance {
+    wgpu::Instance::new(&wgpu::InstanceDescriptor {
+        backends,
+        flags: wgpu::InstanceFlags::default()
+            .difference(wgpu::InstanceFlags::VALIDATION_INDIRECT_CALL)
+            .with_env(),
+        backend_options,
+        ..Default::default()
+    })
+}
 
 pub struct WgpuRenderBackend<T: RenderTarget> {
     pub(crate) descriptors: Arc<Descriptors>,
@@ -64,9 +89,9 @@ impl WgpuRenderBackend<SwapChainTarget> {
         } else {
             wgpu::Backends::GL
         };
-        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
+        let instance = create_wgpu_instance(
             backends,
-            backend_options: wgpu::BackendOptions {
+            wgpu::BackendOptions {
                 gl: wgpu::GlBackendOptions {
                     // See <https://github.com/gfx-rs/wgpu/releases/tag/v25.0.0>
                     fence_behavior: wgpu::GlFenceBehavior::AutoFinish,
@@ -74,8 +99,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
                 },
                 ..Default::default()
             },
-            ..Default::default()
-        });
+        );
         let surface = instance.create_surface(wgpu::SurfaceTarget::Canvas(canvas))?;
         let (adapter, device, queue) = request_adapter_and_device(
             backends,
@@ -105,10 +129,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
                 format_list(&get_backend_names(backend), "and")
             );
         }
-        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
-            backends: backend,
-            ..Default::default()
-        });
+        let instance = create_wgpu_instance(backend, wgpu::BackendOptions::default());
         let surface = unsafe { instance.create_surface_unsafe(window)? };
         let (adapter, device, queue) = futures::executor::block_on(request_adapter_and_device(
             backend,
@@ -150,10 +171,7 @@ impl WgpuRenderBackend<crate::target::TextureTarget> {
                 format_list(&get_backend_names(backend), "and")
             );
         }
-        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
-            backends: backend,
-            ..Default::default()
-        });
+        let instance = create_wgpu_instance(backend, wgpu::BackendOptions::default());
         let (adapter, device, queue) = futures::executor::block_on(request_adapter_and_device(
             backend,
             &instance,
@@ -1011,12 +1029,12 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
     fn create_empty_texture(
         &mut self,
-        width: u32,
-        height: u32,
+        width: NonZeroU32,
+        height: NonZeroU32,
     ) -> Result<BitmapHandle, BitmapError> {
-        if width == 0 || height == 0 {
-            return Err(BitmapError::InvalidSize);
-        }
+        let width = width.get();
+        let height = height.get();
+
         if width > self.descriptors.limits.max_texture_dimension_2d
             || height > self.descriptors.limits.max_texture_dimension_2d
         {
@@ -1128,6 +1146,7 @@ async fn request_device(
             required_limits: limits,
             memory_hints: Default::default(),
             trace: wgpu::Trace::Off,
+            experimental_features: wgpu::ExperimentalFeatures::disabled(),
         })
         .await
 }

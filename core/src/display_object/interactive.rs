@@ -19,6 +19,7 @@ use crate::display_object::{
 use crate::events::{ClipEvent, ClipEventResult, MouseButton};
 use crate::string::AvmString;
 use bitflags::bitflags;
+use either::Either;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, Mutation};
@@ -233,15 +234,22 @@ pub trait TInteractiveObject<'gc>:
         context: &mut UpdateContext<'gc>,
         event: ClipEvent<'gc>,
     ) -> ClipEventResult {
-        if event.propagates() {
-            if let Some(container) = self.as_displayobject().as_container() {
-                for child in container.iter_render_list() {
-                    if let Some(interactive) = child.as_interactive() {
-                        if interactive.handle_clip_event(context, event) == ClipEventResult::Handled
-                        {
-                            return ClipEventResult::Handled;
-                        }
-                    }
+        if event.propagates()
+            && let Some(container) = self.as_displayobject().as_container()
+        {
+            // Mouse events fire in reverse order (high depth to low depth).
+            // Button and key events fire in render list order (low depth to high depth).
+            let children = if event.is_mouse_event() {
+                Either::Left(container.iter_render_list().rev())
+            } else {
+                Either::Right(container.iter_render_list())
+            };
+
+            for child in children {
+                if let Some(interactive) = child.as_interactive()
+                    && interactive.handle_clip_event(context, event) == ClipEventResult::Handled
+                {
+                    return ClipEventResult::Handled;
                 }
             }
         }
@@ -281,10 +289,11 @@ pub trait TInteractiveObject<'gc>:
         // that was originally created by the timeline. Normally, one of the ancestors
         // of the TextField would get targeted, but instead, the event isn't fired
         // (not even the Stage receives the event)
-        if let Some(text) = self.as_displayobject().as_edit_text() {
-            if text.is_selectable() && text.was_static() {
-                return ClipEventResult::NotHandled;
-            }
+        if let Some(text) = self.as_displayobject().as_edit_text()
+            && text.is_selectable()
+            && text.was_static()
+        {
+            return ClipEventResult::NotHandled;
         }
 
         let target = if let Some(target) = self.as_displayobject().object2() {
@@ -785,7 +794,8 @@ impl<'gc> Avm2MousePick<'gc> {
     #[must_use]
     pub fn combine_with_parent(&self, parent: DisplayObjectContainer<'gc>) -> Avm2MousePick<'gc> {
         let parent_int = DisplayObject::from(parent).as_interactive().unwrap();
-        let res = match self {
+
+        match self {
             Avm2MousePick::Hit(target) => {
                 // If the parent has `mouseChildren=true` then propagate the existing
                 // Avm2MousePick::Hit, leaving the target unchanged. This is unaffected
@@ -825,8 +835,7 @@ impl<'gc> Avm2MousePick<'gc> {
             }
             // A miss in a child always stays a miss, regardless of parent settings.
             Avm2MousePick::Miss => Avm2MousePick::Miss,
-        };
-        res
+        }
     }
 }
 
