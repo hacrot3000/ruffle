@@ -1,0 +1,8 @@
+#!/bin/bash
+
+rm Cargo.lock
+cargo clean
+rm -rf ~/.cargo/registry   #Switch on if still error
+rm -rf ~/.cargo/git        #Switch on if still error
+cargo update
+cargo build
