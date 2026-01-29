@@ -18,3 +18,7 @@ RECOVER_*.fla
 .DS_Store
 
 /core/assets/*.ttf
+.lh/
+core/tests/
+web/.lh/
+web/packages/battle/
