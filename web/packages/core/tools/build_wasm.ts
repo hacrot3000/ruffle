@@ -50,10 +50,10 @@ function cargoBuild({
     extensions?: boolean;
 }) {
     let args = ["build", "--locked", "--target", "wasm32-unknown-unknown"];
-    if (!extensions) {
-        args.push("-Z");
-        args.push("build-std=std,panic_abort");
-    }
+    // if (!extensions) {
+    args.push("-Z");
+    args.push("build-std=std,panic_abort");
+    // }
 
     if (profile) {
         args.push("--profile", profile);
@@ -80,7 +80,7 @@ function cargoBuild({
     execFileSync("cargo", args, {
         env: Object.assign(Object.assign({}, process.env), {
             RUSTFLAGS: totalRustFlags,
-            RUSTC_BOOTSTRAP: extensions ? "0" : "1",
+            RUSTC_BOOTSTRAP: "1",
         }),
         stdio: "inherit",
     });
@@ -103,10 +103,8 @@ function buildWasm(
     if (extensions) {
         rustFlags.push(
             "-C",
-            "target-feature=+bulk-memory,+simd128,+nontrapping-fptoint,+sign-ext,+reference-types",
+            "target-feature=+bulk-memory,+simd128,+nontrapping-fptoint,+sign-ext,-reference-types",
         );
-        wasmBindgenFlags.push("--reference-types");
-        wasmOptFlags.push("--enable-reference-types");
     } else {
         rustFlags.push("-C", "target-cpu=mvp");
     }
