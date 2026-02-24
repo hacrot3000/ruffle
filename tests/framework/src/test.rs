@@ -70,7 +70,7 @@ impl Test {
 
     pub fn movie(&self) -> Result<SwfMovie> {
         let data = read_bytes(&self.swf_path)?;
-        let movie = SwfMovie::from_data(&data, format!("file:///{}", self.swf_path.as_str()), None)
+        let movie = SwfMovie::from_data(&data, format!("file://{}", self.swf_path.as_str()), None)
             .map_err(|e| anyhow!(e.to_string()))?;
         Ok(movie)
     }
@@ -155,10 +155,6 @@ impl Test {
             return false;
         }
 
-        self.options.required_features.can_run()
-            && self
-                .options
-                .player_options
-                .can_run(check_renderer, environment)
+        self.options.can_run(check_renderer, environment)
     }
 }

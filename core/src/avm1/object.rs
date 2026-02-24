@@ -17,6 +17,7 @@ use crate::avm1::globals::netconnection::NetConnection;
 use crate::avm1::globals::shared_object::SharedObject;
 use crate::avm1::globals::sound::Sound;
 use crate::avm1::globals::style_sheet::StyleSheetObject;
+use crate::avm1::globals::text_snapshot::TextSnapshotObject;
 use crate::avm1::globals::transform::TransformObject;
 use crate::avm1::globals::xml::Xml;
 use crate::avm1::globals::xml_socket::XmlSocket;
@@ -95,6 +96,7 @@ pub enum NativeObject<'gc> {
     LocalConnection(LocalConnection<'gc>),
     Sound(Sound<'gc>),
     StyleSheet(StyleSheetObject<'gc>),
+    TextSnapshot(TextSnapshotObject<'gc>),
 }
 
 const _: () = assert!(size_of::<NativeObject<'_>>() <= size_of::<[usize; 2]>());
@@ -230,7 +232,7 @@ impl<'gc> Object<'gc> {
                     if let Some(setter) = this_proto.setter(name, activation)
                         && let Some(exec) = setter.as_function()
                     {
-                        let _ = exec.exec(
+                        exec.exec(
                             ExecutionName::Static("[Setter]"),
                             activation,
                             this.into(),
@@ -238,7 +240,7 @@ impl<'gc> Object<'gc> {
                             &[value],
                             ExecutionReason::Special,
                             setter,
-                        );
+                        )?;
                     }
                     return Ok(());
                 }
@@ -409,12 +411,18 @@ pub fn search_prototype<'gc>(
                 ExecutionReason::Special,
                 getter,
             );
-            let value = match result {
-                Ok(v) => v,
+
+            match result {
                 Err(Error::ThrownValue(e)) => return Err(Error::ThrownValue(e)),
-                Err(_) => Value::Undefined,
+                Err(Error::SpecialRecursionLimit) => {
+                    // Fall back to local resolution for compatibility
+                    // with SWF<7.
+                }
+                _ => {
+                    let value = result.unwrap_or(Value::Undefined);
+                    return Ok(Some((value, depth)));
+                }
             };
-            return Ok(Some((value, depth)));
         }
 
         if let Some(value) = p.get_local_stored(name, activation) {

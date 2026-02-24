@@ -413,14 +413,13 @@ impl<'gc> MovieLibraries<'gc> {
     }
 
     fn get_or_insert_mut(&mut self, movie: Arc<SwfMovie>) -> &mut MovieLibrary<'gc> {
-        // NOTE(Clippy): Cannot use or_default() here as PtrWeakKeyHashMap does not have such a method on its Entry API
         self.0
             .entry(movie.clone())
             .or_insert_with(|| MovieLibrary::new(movie))
     }
 
-    fn known_movies(&self) -> Vec<Arc<SwfMovie>> {
-        self.0.keys().collect()
+    fn known_movies(&self) -> impl Iterator<Item = Arc<SwfMovie>> {
+        self.0.keys()
     }
 }
 
@@ -479,7 +478,7 @@ impl<'gc> Library<'gc> {
         self.movie_libraries.get_or_insert_mut(movie)
     }
 
-    pub fn known_movies(&self) -> Vec<Arc<SwfMovie>> {
+    pub fn known_movies(&self) -> impl Iterator<Item = Arc<SwfMovie>> {
         self.movie_libraries.known_movies()
     }
 

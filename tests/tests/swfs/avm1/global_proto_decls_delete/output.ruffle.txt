@@ -42,6 +42,32 @@ Testing _global.textRenderer
   __proto__, DONT_DELETE
 Testing _global.textRenderer.prototype
   __proto__, DONT_DELETE
+Testing _global.flash.automation.Configuration
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+Testing _global.flash.automation.Configuration.prototype
+  __proto__, DONT_DELETE
+Testing _global.flash.automation.ActionGenerator
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+Testing _global.flash.automation.ActionGenerator.prototype
+  __proto__, DONT_DELETE
+Testing _global.flash.automation.StageCapture
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+Testing _global.flash.automation.StageCapture.prototype
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  listenForStageCapture, DONT_DELETE
+  setClipRect, DONT_DELETE
+  getClipRect, DONT_DELETE
+  setFileNameBase, DONT_DELETE
+  getFileNameBase, DONT_DELETE
+  cancel, DONT_DELETE
+  capture, DONT_DELETE
+  __proto__, DONT_DELETE
+Testing _global.flash.automation
+  __proto__, DONT_DELETE
 Testing _global.flash.external.ExternalInterface
   _toJS, DONT_DELETE
   _objectToJS, DONT_DELETE
@@ -1137,6 +1163,7 @@ Testing _global.MovieClip
   prototype, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.MovieClip.prototype
+  getTextSnapshot, DONT_DELETE
   createTextField, DONT_DELETE
   beginBitmapFill, DONT_DELETE
   lineGradientStyle, DONT_DELETE
@@ -1205,6 +1232,7 @@ Testing _global.Object
   prototype, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.Object.prototype
+  toLocaleString, DONT_DELETE
   isPropertyEnumerable, DONT_DELETE
   isPrototypeOf, DONT_DELETE
   hasOwnProperty, DONT_DELETE
@@ -1214,6 +1242,7 @@ Testing _global.Object.prototype
   unwatch, DONT_DELETE
   watch, DONT_DELETE
 Testing _global.ASnative
+  toLocaleString, DONT_DELETE
   isPropertyEnumerable, DONT_DELETE
   isPrototypeOf, DONT_DELETE
   hasOwnProperty, DONT_DELETE

@@ -187,9 +187,6 @@ impl TextFormat {
             .map(|l| l.leading.to_pixels())
             .unwrap_or_default();
 
-        // TODO: Text fields that don't specify a font are assumed to be 12px
-        // Times New Roman non-bold, non-italic. This will need to be revised
-        // when we start supporting device fonts.
         Self {
             font: Some(font_class),
             size: Some(et.height().map(|h| h.to_pixels()).unwrap_or(12.0)),
@@ -214,14 +211,12 @@ impl TextFormat {
             left_margin: Some(left_margin),
             right_margin: Some(right_margin),
             indent: Some(indent),
-            block_indent: Some(0.0), // TODO: This isn't specified by the tag itself
+            block_indent: Some(0.0),
             kerning: Some(false),
             leading: Some(leading),
-            letter_spacing: Some(0.0), // TODO: This isn't specified by the tag itself
-            tab_stops: Some(vec![]),   // TODO: Are there default tab stops?
-            bullet: Some(false),       // TODO: Default tab stops?
-
-            // TODO: These are probably empty strings by default
+            letter_spacing: Some(0.0),
+            tab_stops: Some(vec![]),
+            bullet: Some(false),
             url: Some(WString::new()),
             target: Some(WString::new()),
         }
@@ -745,7 +740,10 @@ impl FormatSpans {
                         Ok(attributes) => attributes,
                         Err(e) => {
                             tracing::warn!("Error while parsing HTML: {}", e);
-                            return Default::default();
+                            return Self {
+                                default_format,
+                                ..Default::default()
+                            };
                         }
                     };
                     let attribute = move |name| {
@@ -859,22 +857,17 @@ impl FormatSpans {
                                 }
                             }
 
-                            if let Some(color) = attribute(b"color") {
-                                // FIXME - handle alpha
-                                if color.starts_with(b'#') {
-                                    let rval = color
-                                        .slice(1..3)
-                                        .and_then(|v| u8::from_wstr_radix(v, 16).ok());
-                                    let gval = color
-                                        .slice(3..5)
-                                        .and_then(|v| u8::from_wstr_radix(v, 16).ok());
-                                    let bval = color
-                                        .slice(5..7)
-                                        .and_then(|v| u8::from_wstr_radix(v, 16).ok());
-
-                                    if let (Some(r), Some(g), Some(b)) = (rval, gval, bval) {
-                                        format.color = Some(swf::Color { r, g, b, a: 0 });
-                                    }
+                            if let Some(color) = attribute(b"color")
+                                && let Some(hex) = color.strip_prefix(b'#')
+                            {
+                                let hex = hex.trim_start();
+                                let end = hex
+                                    .iter()
+                                    .take_while(|c| ruffle_wstr::utils::swf_is_ascii_hexdigit(*c))
+                                    .count();
+                                let start = end.saturating_sub(6);
+                                if let Ok(rgb) = u32::from_wstr_radix(&hex[start..end], 16) {
+                                    format.color = Some(swf::Color::from_rgb(rgb, 0));
                                 }
                             }
 

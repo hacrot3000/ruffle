@@ -1120,6 +1120,7 @@ Testing __proto__()
 testing _global.MovieClip(function)
 Trying to construct _global.MovieClip
 Object was constructed
+Testing getTextSnapshot()
 Testing createTextField()
 Testing beginBitmapFill()
 Testing lineGradientStyle()
@@ -1191,6 +1192,7 @@ Testing __proto__()
 testing _global.Object(function)
 Trying to construct _global.Object
 Object was constructed
+Testing toLocaleString()
 Testing isPropertyEnumerable()
 Testing isPrototypeOf()
 Testing hasOwnProperty()

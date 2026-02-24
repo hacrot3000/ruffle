@@ -22,6 +22,7 @@ pub fn asnative<'gc>(
         100 => Some(globals::method),
         101 => Some(globals::object::method),
         103 => Some(globals::date::method),
+        200 => Some(globals::math::method),
         1101 => Some(globals::drop_shadow_filter::method),
         1102 => Some(globals::blur_filter::method),
         1103 => Some(globals::glow_filter::method),
@@ -31,6 +32,11 @@ pub fn asnative<'gc>(
         1109 => Some(globals::convolution_filter::method),
         1110 => Some(globals::color_matrix_filter::method),
         1111 => Some(globals::displacement_map_filter::method),
+        1999 => Some(globals::accessibility::method),
+        2102 => Some(globals::camera::method),
+        2700 => Some(globals::automation_stage_capture::method),
+        2800 => Some(globals::automation_action_generator::method),
+        2900 => Some(globals::automation_configuration::method),
         _ => None,
     };
 

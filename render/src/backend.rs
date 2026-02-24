@@ -8,7 +8,7 @@ use crate::pixel_bender::{PixelBenderShader, PixelBenderShaderHandle};
 use crate::pixel_bender_support::PixelBenderShaderArgument;
 use crate::quality::StageQuality;
 use crate::shape_utils::DistilledShape;
-use ruffle_wstr::WStr;
+use ruffle_wstr::{FromWStr, WStr};
 use std::any::Any;
 use std::borrow::Cow;
 use std::cell::RefCell;
@@ -56,7 +56,7 @@ pub trait RenderBackend: Any {
         _source_point: (u32, u32),
         _source_size: (u32, u32),
         _destination: BitmapHandle,
-        _dest_point: (u32, u32),
+        _dest_point: (i32, i32),
         _filter: Filter,
     ) -> Option<Box<dyn SyncHandle>> {
         None
@@ -238,6 +238,20 @@ pub enum BufferUsage {
 pub enum ProgramType {
     Vertex,
     Fragment,
+}
+
+impl FromWStr for ProgramType {
+    type Err = ();
+
+    fn from_wstr(s: &WStr) -> Result<Self, Self::Err> {
+        if s == b"vertex" {
+            Ok(ProgramType::Vertex)
+        } else if s == b"fragment" {
+            Ok(ProgramType::Fragment)
+        } else {
+            Err(())
+        }
+    }
 }
 
 pub trait Context3D: Any {

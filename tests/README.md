@@ -30,10 +30,25 @@ tick_rate = 16.666
 # Necessary for some timer tests.
 sleep_to_meet_frame_rate = false
 
+# If true, log AVM warnings.
+# Warnings are special AVM traces that can be produced by Flash Player (but
+# don't have to) and can provide insight into what AVM does.  This option can be
+# used to disable warnings in case the output does not contain them.
+log_warnings = true
+
 # If true, ignore this test.
 # Please comment why, ideally link to an issue, so we know what's up.
 # Prefer setting `known_failure = true` to ignoring the test.
 ignore = false
+
+# If specified, a cfg-like expression that checks if the test can run.
+# Useful for platform-specific tests.
+#
+# Available predicates:
+#  * os
+#  * arch
+#  * family
+filter = 'os = "windows"'
 
 # If true, this test is known to fail and the test runner will expect the check against
 # the trace output (specified `output_path`) to fail.
@@ -55,10 +70,13 @@ log_fetch = false
 
 # Sometimes floating point math doesn't exactly 100% match between Flash and Rust.
 # If you encounter this in a test, the following section will change the output
-# testing from "exact" to "approximate" (when it comes to floating point numbers, at least.)
+# testing from "exact" to "approximate" (when it comes to floating point numbers, at least).
 [approximations]
 
-# A list of regex patterns with capture groups to additionally treat as approximate numbers.
+# Should output lines solely consisting of a single number be subject to approximations?
+bare_numbers = false
+
+# A list of regex patterns with capture groups to treat as approximate numbers.
 number_patterns = []
 
 # The upper bound of any rounding errors.
@@ -134,13 +152,8 @@ tolerance = 0
 # Same as `image_comparisons.COMPARISON_NAME.max_outliers`, but for this particular check.
 max_outliers = 0
 
-# Filter is a cfg-like expression that checks if this particular check should be performed.
-# It can be used to add different checks for e.g. different platforms.
-#
-# Available predicates:
-#  * os
-#  * arch
-#  * family
+# Filter is a cfg-like expression (with the same format as the top-level `filter` key) that checks if this
+# particular check should be performed. It can be used to add different checks for e.g. different platforms.
 filter = 'arch = "aarch64"'
 
 # Which build features are required for this test to run.
