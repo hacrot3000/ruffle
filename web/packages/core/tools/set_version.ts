@@ -4,7 +4,7 @@ import fs from "fs";
 import path from "path";
 
 let buildDate = new Date().toISOString();
-let versionNumber = process.env["npm_package_version"] ?? "";
+let versionNumber = process.env["RUFFLE_VERSION"] || process.env["npm_package_version"] || "";
 let versionChannel = process.env["CFG_RELEASE_CHANNEL"] || "local";
 const firefoxExtensionId =
     process.env["FIREFOX_EXTENSION_ID"] || "ruffle@ruffle.rs";
@@ -17,11 +17,13 @@ try {
     console.log("Couldn't fetch latest git commit...");
 }
 
-let versionName;
-if (versionChannel === "stable" || versionNumber?.includes(versionChannel)) {
-    versionName = versionNumber;
-} else {
-    versionName = `${versionChannel} ${versionNumber}`;
+let versionName = process.env["RUFFLE_VERSION_NAME"];
+if (!versionName) {
+    if (versionChannel === "stable" || versionNumber?.includes(versionChannel)) {
+        versionName = versionNumber;
+    } else {
+        versionName = `${versionChannel} ${versionNumber}`;
+    }
 }
 
 interface VersionInformation {

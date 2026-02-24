@@ -13,6 +13,9 @@ if [ ! -d "$SOURCE_DIR" ]; then
     exit 1
 fi
 
+echo "Creating destination directory: $DEST_PATH"
+ssh -p $SSH_PORT $DEST_SERVER "mkdir -p $DEST_PATH"
+
 echo "Uploading files from $SOURCE_DIR to $DEST_SERVER:$DEST_PATH..."
 
 # Use scp with recursive flag to copy all files and subdirectories

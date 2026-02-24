@@ -9,6 +9,11 @@ fi
 
 MODE=$1
 
+# Thêm export các biến môi trường (Có thể thay đổi tuỳ ý)
+export RUFFLE_VERSION=${RUFFLE_VERSION:-"2.1.1-CD"}
+export RUFFLE_VERSION_NAME=${RUFFLE_VERSION_NAME:-"568E CD"}
+export CFG_RELEASE_CHANNEL=${CFG_RELEASE_CHANNEL:-"CD"}
+
 cd ../web
 
 echo "Building web in $MODE mode"

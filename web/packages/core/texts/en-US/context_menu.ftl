@@ -1,12 +1,12 @@
-context-menu-download-swf = Download .swf
-context-menu-copy-debug-info = Copy Debug Info
-context-menu-open-save-manager = Open Save Manager
+context-menu-download-swf = Tải game xuống
+context-menu-copy-debug-info = Sao chép thông tin gỡ lỗi
+context-menu-open-save-manager = Mở trình quản lý lưu
 context-menu-about-ruffle =
     { $flavor ->
-        [extension] About Ruffle Extension ({$version})
-        *[other] About Ruffle ({$version})
+        [extension] Giới thiệu ({$version})
+        *[other] Giới thiệu ({$version})
     }
-context-menu-hide = Hide This Menu
-context-menu-exit-fullscreen = Exit Full Screen
-context-menu-enter-fullscreen = Enter Full Screen
-context-menu-volume-controls = Volume Controls
+context-menu-hide = Ẩn menu này
+context-menu-exit-fullscreen = Thoát chế độ toàn màn hình
+context-menu-enter-fullscreen = Vào chế độ toàn màn hình
+context-menu-volume-controls = Điều khiển âm lượng
