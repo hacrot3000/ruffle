@@ -5,7 +5,7 @@ use crate::PlayerRuntime;
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
-use crate::avm2::error::Error;
+use crate::avm2::error::{Error, make_error_1032};
 use crate::avm2::globals::global_scope;
 use crate::avm2::method::{Method, MethodAssociation};
 use crate::avm2::object::{Object, ScriptObject, TObject};
@@ -14,7 +14,7 @@ use crate::avm2::traits::{Trait, TraitKind};
 use crate::avm2::vtable::VTable;
 use crate::avm2::{Avm2, Multiname, Namespace};
 use crate::context::UpdateContext;
-use crate::string::{AvmAtom, AvmString, StringContext};
+use crate::string::{AvmAtom, AvmString};
 use crate::tag_utils::SwfMovie;
 use gc_arena::barrier::field;
 use gc_arena::lock::OnceLock;
@@ -251,13 +251,31 @@ impl<'gc> TranslationUnit<'gc> {
     /// are free to interpret as the context demands.
     pub fn pool_string_option(
         self,
-        string_index: u32,
-        context: &mut StringContext<'gc>,
+        string_index: Index<String>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<Option<AvmAtom<'gc>>, Error<'gc>> {
-        if string_index == 0 {
+        if string_index.0 == 0 {
             Ok(None)
         } else {
-            self.pool_string(string_index, context).map(Some)
+            self.pool_string(string_index, activation).map(Some)
+        }
+    }
+
+    /// Load a string from the ABC's constant pool.
+    ///
+    /// This function yields an error if no such string index exists, or if
+    /// string index zero was passed.
+    pub fn pool_string_or_err(
+        self,
+        string_index: Index<String>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<AvmAtom<'gc>, Error<'gc>> {
+        if string_index.0 == 0 {
+            let strings = &self.0.abc.constant_pool.strings;
+
+            Err(make_error_1032(activation, 0, strings.len()))
+        } else {
+            self.pool_string(string_index, activation)
         }
     }
 
@@ -269,29 +287,30 @@ impl<'gc> TranslationUnit<'gc> {
     /// something else, then please use `pool_string_option`.
     pub fn pool_string(
         self,
-        string_index: u32,
-        context: &mut StringContext<'gc>,
+        string_index: Index<String>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<AvmAtom<'gc>, Error<'gc>> {
-        let idx = string_index as usize;
+        let idx = string_index.0 as usize;
         if let Some(atom) = self.0.strings.get(idx).and_then(|a| a.get()) {
             return Ok(*atom);
         }
 
-        let raw = if string_index == 0 {
+        let raw = if idx == 0 {
             &[]
         } else {
-            self.0
-                .abc
-                .constant_pool
-                .strings
+            let strings = &self.0.abc.constant_pool.strings;
+
+            strings
                 .get(idx - 1)
-                .ok_or_else(|| format!("Unknown string constant {string_index}"))?
+                .ok_or_else(|| make_error_1032(activation, idx, strings.len()))?
                 .as_slice()
         };
 
-        let atom = context.intern_wstr(ruffle_wstr::from_utf8_bytes(raw));
+        let atom = activation
+            .strings()
+            .intern_wstr(ruffle_wstr::from_utf8_bytes(raw));
 
-        let write = Gc::write(context.gc(), self.0);
+        let write = Gc::write(activation.gc(), self.0);
         let strings = field!(write, TranslationUnitData, strings).as_deref();
         strings[idx].unlock().set(atom).unwrap();
         Ok(atom)
@@ -369,6 +388,135 @@ impl<'gc> TranslationUnit<'gc> {
         } else {
             self.pool_multiname_static(activation, multiname_index)
                 .map(Some)
+        }
+    }
+
+    /// Load an integer from the ABC's constant pool.
+    ///
+    /// This function yields an error if no such integer index exists, or if
+    /// index zero was passed.
+    pub fn pool_int_or_err(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        int_index: Index<i32>,
+    ) -> Result<i32, Error<'gc>> {
+        if int_index.0 == 0 {
+            let ints = &self.0.abc.constant_pool.ints;
+
+            Err(make_error_1032(activation, 0, ints.len()))
+        } else {
+            self.pool_int(activation, int_index)
+        }
+    }
+
+    /// Load an integer from the ABC's constant pool.
+    ///
+    /// This function yields an error if no such integer index exists.
+    ///
+    /// Integer index 0 is always 0.
+    pub fn pool_int(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        int_index: Index<i32>,
+    ) -> Result<i32, Error<'gc>> {
+        let idx = int_index.0 as usize;
+
+        if idx == 0 {
+            Ok(0)
+        } else {
+            let ints = &self.0.abc.constant_pool.ints;
+
+            let int = ints
+                .get(idx - 1)
+                .ok_or_else(|| make_error_1032(activation, idx, ints.len()))?;
+
+            Ok(*int)
+        }
+    }
+
+    /// Load an unsigned integer from the ABC's constant pool.
+    ///
+    /// This function yields an error if no such unsigned integer index exists,
+    /// or if index zero was passed.
+    pub fn pool_uint_or_err(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        uint_index: Index<u32>,
+    ) -> Result<u32, Error<'gc>> {
+        if uint_index.0 == 0 {
+            let uints = &self.0.abc.constant_pool.uints;
+
+            Err(make_error_1032(activation, 0, uints.len()))
+        } else {
+            self.pool_uint(activation, uint_index)
+        }
+    }
+
+    /// Load an unsigned integer from the ABC's constant pool.
+    ///
+    /// This function yields an error if no such unsigned integer index exists.
+    ///
+    /// Unsigned integer index 0 is always 0.
+    pub fn pool_uint(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        uint_index: Index<u32>,
+    ) -> Result<u32, Error<'gc>> {
+        let idx = uint_index.0 as usize;
+
+        if idx == 0 {
+            Ok(0)
+        } else {
+            let uints = &self.0.abc.constant_pool.uints;
+
+            let uint = uints
+                .get(idx - 1)
+                .ok_or_else(|| make_error_1032(activation, idx, uints.len()))?;
+
+            Ok(*uint)
+        }
+    }
+
+    /// Load a double from the ABC's constant pool.
+    ///
+    /// This function yields an error if no such double index exists, or if
+    /// index zero was passed.
+    pub fn pool_double_or_err(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        double_index: Index<f64>,
+    ) -> Result<f64, Error<'gc>> {
+        if double_index.0 == 0 {
+            let doubles = &self.0.abc.constant_pool.doubles;
+
+            Err(make_error_1032(activation, 0, doubles.len()))
+        } else {
+            self.pool_double(activation, double_index)
+        }
+    }
+
+    /// Load a double from the ABC's constant pool.
+    ///
+    /// This function yields an error if no such double index exists.
+    ///
+    /// Double index 0 is always NaN.
+    pub fn pool_double(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        double_index: Index<f64>,
+    ) -> Result<f64, Error<'gc>> {
+        let idx = double_index.0 as usize;
+
+        if idx == 0 {
+            Ok(f64::NAN)
+        } else {
+            let doubles = &self.0.abc.constant_pool.doubles;
+
+            let double = doubles
+                .get(idx - 1)
+                .ok_or_else(|| make_error_1032(activation, idx, doubles.len()))?;
+
+            Ok(*double)
         }
     }
 }
