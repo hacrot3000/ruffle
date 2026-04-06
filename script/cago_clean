@@ -4,5 +4,6 @@ rm Cargo.lock
 cargo clean
 rm -rf ~/.cargo/registry   #Switch on if still error
 rm -rf ~/.cargo/git        #Switch on if still error
+cargo install -f wasm-bindgen-cli --version 0.2.108
 cargo update
 cargo build

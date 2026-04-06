@@ -10,7 +10,7 @@ use crate::avm2::vtable::VTable;
 use crate::avm2::{Error, Multiname, QName};
 use crate::context::UpdateContext;
 use crate::string::AvmString;
-use gc_arena::barrier::{Write, unlock};
+use gc_arena::barrier::{field, unlock};
 use gc_arena::{
     Collect, DynamicRoot, Gc, GcWeak, Mutation, Rootable,
     lock::{Lock, RefLock},
@@ -261,15 +261,6 @@ impl<'gc> ScriptObjectWrapper<'gc> {
         Ok(())
     }
 
-    pub fn init_property_local(
-        self,
-        multiname: &Multiname<'gc>,
-        value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<(), Error<'gc>> {
-        self.set_property_local(multiname, value, activation)
-    }
-
     pub fn delete_property_local(self, mc: &Mutation<'gc>, multiname: &Multiname<'gc>) -> bool {
         // TODO: FP behaves differently here in interpreter mode vs JIT mode
         if !multiname.valid_dynamic_name() {
@@ -297,12 +288,9 @@ impl<'gc> ScriptObjectWrapper<'gc> {
 
     /// Set a slot by its index.
     pub fn set_slot(self, id: usize, value: Value<'gc>, mc: &Mutation<'gc>) {
-        let slot = self.0.slots.get(id).expect("Slot index out of bounds");
+        let slots_write = field!(Gc::write(mc, self.0), ScriptObjectData, slots).as_deref();
 
-        Gc::write(mc, self.0);
-        // SAFETY: We just triggered a write barrier on the Gc.
-        let slot_write = unsafe { Write::assume(slot) };
-        slot_write.unlock().set(value);
+        slots_write[id].unlock().set(value);
     }
 
     /// Retrieve a bound method from the method table.

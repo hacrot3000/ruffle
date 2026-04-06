@@ -92,6 +92,13 @@ impl MainWindow {
                     return;
                 }
 
+                // This is needed because some platforms (like macOS)
+                // will fire this event at the same time as WindowEvent::MouseInput,
+                // which may cause inaccurate behavior in the movie
+                if position == self.mouse_pos {
+                    return;
+                }
+
                 self.mouse_pos = position;
                 let (x, y) = self.gui.window_to_movie_position(position);
                 let event = PlayerEvent::MouseMove { x, y };
@@ -335,7 +342,7 @@ impl MainWindow {
         if let Some(mut player) = self.player.get() {
             player.set_viewport_dimensions(ViewportDimensions {
                 width: viewport_size.width,
-                height: viewport_size.height - height_offset as u32,
+                height: viewport_size.height - (height_offset * viewport_scale_factor) as u32,
                 scale_factor: viewport_scale_factor,
             });
         }

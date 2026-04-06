@@ -304,6 +304,10 @@ impl<'gc> LoadManager<'gc> {
         request: Request,
         importer_movie: MovieClip<'gc>,
     ) -> OwnedFuture<(), Error> {
+        // TODO: Observe more closely how this should behave in AVM2.
+        // It looks like AVM2 is more strict than AVM1 regarding when
+        // something is not a valid import, and doesn't continue
+        // executing when that is the case(?).
         let player = uc.player_handle();
         let importer_movie = MovieClipHandle::stash(uc, importer_movie);
 
@@ -311,45 +315,46 @@ impl<'gc> LoadManager<'gc> {
             let fetch = player.lock().unwrap().fetch(request, FetchReason::LoadSwf);
 
             match wait_for_full_response(fetch).await {
+                // TODO: In some cases, if the fetched url is a directory,
+                // FP will ignore it and continue to execute the movie.
                 Ok((body, url, _status, _redirected)) => {
                     let content_type = ContentType::sniff(&body);
                     tracing::info!("Loading imported movie: {:?}", url);
-                    match content_type {
-                        ContentType::Swf => {
+
+                    player.lock().unwrap().mutate_with_update_context(|uc| {
+                        let importer_movie = importer_movie.fetch(uc);
+
+                        if matches!(content_type, ContentType::Swf) {
                             let movie = SwfMovie::from_data(&body, url.clone(), Some(url.clone()))
                                 .expect("Could not load movie");
 
                             let movie = Arc::new(movie);
 
-                            player.lock().unwrap().mutate_with_update_context(|uc| {
-                                let importer_movie = importer_movie.fetch(uc);
-                                let clip = MovieClip::new_import_assets(uc, movie, importer_movie);
+                            let clip = MovieClip::new_import_assets(uc, movie, importer_movie);
 
-                                clip.set_cur_preload_frame(0);
-                                let mut execution_limit = ExecutionLimit::none();
+                            clip.set_cur_preload_frame(0);
+                            let mut execution_limit = ExecutionLimit::none();
 
-                                tracing::debug!("Preloading swf to run exports {:?}", url);
+                            tracing::debug!("Preloading swf to run exports {:?}", url);
 
-                                // Create library for exports before preloading
-                                uc.library.library_for_movie_mut(clip.movie());
-                                let res = clip.preload(uc, &mut execution_limit);
-                                tracing::debug!(
-                                    "Preloaded swf to run exports result {:?} {}",
-                                    url,
-                                    res
-                                );
-                                importer_movie.finish_importing();
-                            });
-                            Ok(())
-                        }
-                        _ => {
+                            // Create library for exports before preloading
+                            uc.library.library_for_movie_mut(clip.movie());
+                            let res = clip.preload(uc, &mut execution_limit);
+                            tracing::debug!(
+                                "Preloaded swf to run exports result {:?} {}",
+                                url,
+                                res
+                            );
+                        } else {
                             tracing::warn!(
                                 "Unsupported content type for ImportAssets: {:?}",
                                 content_type
                             );
-                            Ok(())
                         }
-                    }
+
+                        importer_movie.finish_importing();
+                    });
+                    Ok(())
                 }
                 Err(e) => Err(Error::FetchError(format!(
                     "Could not fetch: {:?} because {:?}",
@@ -1049,7 +1054,11 @@ pub fn load_form_into_load_vars<'gc>(
                     );
                 }
                 Err(response) => {
-                    // TODO: Log "Error opening URL" trace similar to the Flash Player?
+                    tracing::error!(
+                        "Error during LoadVars load of {:?}: {:?}",
+                        response.url,
+                        response.error
+                    );
 
                     let status_code = if let Error::HttpNotOk(_, status_code, _, _) = response.error
                     {
@@ -1120,8 +1129,12 @@ pub fn load_stylesheet<'gc>(
                         ExecutionReason::Special,
                     );
                 }
-                Err(_) => {
-                    // TODO: Log "Error opening URL" trace similar to the Flash Player?
+                Err(response) => {
+                    tracing::error!(
+                        "Error during AVM1 stylesheet load of {:?}: {:?}",
+                        response.url,
+                        response.error
+                    );
 
                     let _ = that.call_method(
                         istr!("onLoad"),
@@ -1411,7 +1424,13 @@ pub fn load_sound_avm2<'gc>(
                         Avm2EventObject::bare_default_event(activation.context, "complete");
                     Avm2::dispatch_event(activation.context, complete_evt, sound_object);
                 }
-                Err(_err) => {
+                Err(response) => {
+                    tracing::error!(
+                        "Error during AVM2 sound load of {:?}: {:?}",
+                        response.url,
+                        response.error
+                    );
+
                     let mut activation = Avm2Activation::from_nothing(uc);
 
                     // FIXME: Match the exact error message generated by Flash.
@@ -1478,12 +1497,20 @@ pub fn load_netstream<'gc>(
 
                 Ok(())
             }
-            Err(response) => player.lock().unwrap().update(|uc| {
-                let stream = stream.fetch(uc);
+            Err(response) => {
+                tracing::error!(
+                    "Error during netstream load of {:?}: {:?}",
+                    response.url,
+                    response.error
+                );
 
-                stream.report_error(response.error);
-                Ok(())
-            }),
+                player.lock().unwrap().update(|uc| {
+                    let stream = stream.fetch(uc);
+
+                    stream.report_error(response.error);
+                    Ok(())
+                })
+            }
         }
     })
 }

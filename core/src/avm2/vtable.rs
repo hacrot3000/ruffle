@@ -455,12 +455,9 @@ impl<'gc> VTable<'gc> {
                     let default_value = trait_to_default_value(trait_data);
 
                     let prop_class = match trait_data.kind() {
-                        TraitKind::Slot {
-                            type_name, domain, ..
+                        TraitKind::Slot { slot_type, .. } | TraitKind::Const { slot_type, .. } => {
+                            *slot_type
                         }
-                        | TraitKind::Const {
-                            type_name, domain, ..
-                        } => PropertyClass::name(*type_name, *domain),
                         TraitKind::Class { class, .. } => PropertyClass::Class(
                             class.c_class().expect("Trait should hold an i_class"),
                         ),
@@ -522,13 +519,17 @@ impl<'gc> VTable<'gc> {
             }
         }
 
-        // Append the new slots to the slot table now
+        // Append the new slots to the slot table now.
         for slot in new_slots {
             if let Some(slot) = slot {
                 slot_table.push(slot);
             } else {
-                // Holes in the slot table throw an error in Flash Player
-                return Err(VTableInitError::SlotHole);
+                // Gaps in the slot numbering are filled with a default
+                // `*`-typed slot, matching avmplus behavior.
+                slot_table.push(SlotInfo {
+                    property_class: Lock::new(PropertyClass::Any),
+                    default_value: Value::Undefined,
+                });
             }
         }
 
@@ -618,15 +619,12 @@ impl<'gc> VTable<'gc> {
 #[derive(Debug)]
 pub enum VTableInitError {
     SlotConflict,
-    SlotHole,
 }
 
 impl VTableInitError {
     pub fn into_avm<'gc>(self, activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
         match self {
-            VTableInitError::SlotConflict | VTableInitError::SlotHole => {
-                make_error_1107(activation)
-            }
+            VTableInitError::SlotConflict => make_error_1107(activation),
         }
     }
 }

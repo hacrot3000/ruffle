@@ -743,12 +743,15 @@ impl<'gc> MovieClip<'gc> {
             _ => unreachable!(),
         };
 
-        let mc = context.gc();
-        let library = context.library.library_for_movie_mut(self.movie());
-
         let asset_url = url.to_string_lossy(UTF_8);
 
-        let request = Request::get(asset_url);
+        // FP does not attempt to load the url if it is empty
+        if asset_url.is_empty() {
+            return Ok(());
+        }
+
+        let mc = context.gc();
+        let library = context.library.library_for_movie_mut(self.movie());
 
         for asset in exported_assets {
             let name = asset.name.decode(reader.encoding());
@@ -758,6 +761,8 @@ impl<'gc> MovieClip<'gc> {
 
             library.register_import(name, id);
         }
+
+        let request = Request::get(asset_url);
 
         let fut = LoadManager::load_asset_movie(context, request, self);
         self.0
@@ -1065,7 +1070,7 @@ impl<'gc> MovieClip<'gc> {
             .map(|(frame, label)| (label.clone(), *frame))
             .collect();
 
-        values.sort_unstable_by(|(_, framea), (_, frameb)| framea.cmp(frameb));
+        values.sort_unstable_by_key(|(_, frame)| *frame);
 
         values
     }
@@ -4020,9 +4025,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
     fn scene_and_frame_labels(&self, reader: &mut SwfStream<'_>) -> Result<(), Error> {
         let mut shared = self.cell.borrow_mut();
         let mut sfl_data = reader.read_define_scene_and_frame_label_data()?;
-        sfl_data
-            .scenes
-            .sort_unstable_by(|s1, s2| s1.frame_num.cmp(&s2.frame_num));
+        sfl_data.scenes.sort_unstable_by_key(|s| s.frame_num);
 
         for (i, FrameLabelData { frame_num, label }) in sfl_data.scenes.iter().enumerate() {
             let start = *frame_num as u16 + 1;
